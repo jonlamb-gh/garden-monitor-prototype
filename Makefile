@@ -1,6 +1,6 @@
 TARGET := bin/garden-monitor
 
-SRCS := src/pio.c src/main.c
+SRCS := src/atimer.c src/pio.c src/pio_ring.c src/main.c
 
 OBJS := $(SRCS:.c=.o)
 DEPS := $(SRCS:.c=.dep)
@@ -10,7 +10,7 @@ CC = gcc
 
 CCFLAGS = -std=gnu99
 
-CCFLAGS += -Wall -Wextra \
+CCFLAGS += -Wall -Wextra -Werror \
           -Wformat=2 -Wno-unused-parameter -Wshadow \
           -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
           -Wnested-externs -Wmissing-include-dirs
@@ -19,7 +19,7 @@ LDFLAGS =
 
 INCLUDES = -Iinclude
 
-LIBS = -lphidget22 -lpopt
+LIBS = -lpthread -lrt -lphidget22 -lpopt
 
 all: dirs $(TARGET)
 

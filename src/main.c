@@ -9,23 +9,55 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <semaphore.h>
 #include <popt.h>
 
+#include "atimer.h"
 #include "pio.h"
+#include "pio_ring.h"
 
-enum option_kind
+// TODO - add more options for these
+#define DEF_DATA_POLL_INTERVAL_MS (500UL)
+#define DEF_RING_BUFFER_LENGTH (128UL)
+
+enum option_e
 {
     OPTION_VERBOSE = 1,
     OPTION_SERIAL_NUMBER = 2
 };
 
-static sig_atomic_t global_exit_signal;
+static volatile sig_atomic_t global_exit_signal;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 static void sig_handler(int sig)
 {
     if(sig == SIGINT)
     {
         global_exit_signal = 1;
+    }
+}
+
+static void timer_callback(union sigval data)
+{
+    int status;
+
+    status = pthread_mutex_lock(&mutex);
+
+    if(status == 0)
+    {
+        status = pthread_cond_signal(&cond);
+    }
+
+    if(status == 0)
+    {
+        status = pthread_mutex_unlock(&mutex);
+    }
+
+    if(status != 0)
+    {
+        exit(1);
     }
 }
 
@@ -37,6 +69,16 @@ int main(int argc, char **argv)
     struct sigaction sigact;
     poptContext opt_ctx;
     pio_s pio;
+    pio_ring_s pio_ring;
+    atimer_s data_poll_timer;
+
+    const struct itimerspec data_poll_timer_spec =
+    {
+        .it_value.tv_sec = 0,
+        .it_value.tv_nsec = (1000ULL * 1000ULL * DEF_DATA_POLL_INTERVAL_MS),
+        .it_interval.tv_sec = 0,
+        .it_interval.tv_nsec = (1000ULL * 1000ULL * DEF_DATA_POLL_INTERVAL_MS)
+    };
 
     const struct poptOption OPTIONS_TABLE[] =
     {
@@ -124,15 +166,61 @@ int main(int argc, char **argv)
         ret = pio_init(serial_number, &pio);
     }
 
+    (void) memset(&pio_ring, 0, sizeof(pio_ring));
+
+    if(ret == 0)
+    {
+        ret = pio_ring_alloc(DEF_RING_BUFFER_LENGTH, &pio_ring);
+    }
+
+    (void) memset(&data_poll_timer, 0, sizeof(data_poll_timer));
+
+    if(ret == 0)
+    {
+        ret = atimer_create(
+                timer_callback,
+                NULL,
+                &data_poll_timer);
+    }
+
+    // enable timers
+    if(ret == 0)
+    {
+        ret = atimer_set(
+                &data_poll_timer_spec,
+                &data_poll_timer);
+    }
+
     // don't start if we've encountered an error
     if(ret != 0)
     {
         global_exit_signal = 1;
     }
 
-    while(global_exit_signal == 0)
+    while((global_exit_signal == 0) && (ret == 0))
     {
-        sleep(1);
+        pio_measurement_s measurement;
+
+        ret = pthread_mutex_lock(&mutex);
+
+        if(ret == 0)
+        {
+            ret = pthread_cond_wait(&cond, &mutex);
+            ret |= pthread_mutex_unlock(&mutex);
+        }
+
+        if(ret == 0)
+        {
+            // TESTING
+            printf(".");
+            (void) fflush(stdout);
+            ret = pio_poll(&pio, &measurement);
+        }
+
+        if(ret == 0)
+        {
+            ret = pio_ring_put(&measurement, &pio_ring);
+        }
     }
 
     pio_fini(&pio);

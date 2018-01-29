@@ -7,14 +7,15 @@
 #ifndef PIO_H
 #define PIO_H
 
+#include <time.h>
 #include <phidget22.h>
+
+#include "pio_defs.h"
 
 typedef struct
 {
-    PhidgetVoltageInputHandle h_1143;
-    PhidgetVoltageInputHandle h_1127;
-    PhidgetVoltageRatioInputHandle h_1125_humid;
-    PhidgetVoltageRatioInputHandle h_1125_temp;
+    unsigned long serial_number;
+    pio_sensor_s sensors[PIO_SENSOR_KIND_COUNT];
 } pio_s;
 
 int pio_init(
@@ -23,5 +24,9 @@ int pio_init(
 
 void pio_fini(
         pio_s * const pio);
+
+int pio_poll(
+        pio_s * const pio,
+        pio_measurement_s * const measurement);
 
 #endif  /* PIO_H */

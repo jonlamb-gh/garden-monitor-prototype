@@ -3,7 +3,7 @@
  * @brief TODO.
  *
  * TODO:
- * - clean up the repeats
+ * - clean up the repeats, for-each macro or better indexing scheme
  *
  */
 
@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <phidget22.h>
 
 #include "pio.h"
@@ -33,6 +34,14 @@
         } \
     } \
 }
+
+static const int INDEX_TO_CHANNEL[] =
+{
+    [PIO_SENSOR_1143] = AIN_CHANNEL_1143,
+    [PIO_SENSOR_1127] = AIN_CHANNEL_1127,
+    [PIO_SENSOR_1125_HUMID] = AIN_CHANNEL_1125_HUMID,
+    [PIO_SENSOR_1125_TEMP] = AIN_CHANNEL_1125_TEMP
+};
 
 static int p_err(
         const char * const label,
@@ -63,6 +72,7 @@ int pio_init(
         pio_s * const pio)
 {
     int ret = 0;
+    unsigned long idx;
     PhidgetReturnCode p_ret;
 
     if(pio == NULL)
@@ -71,146 +81,174 @@ int pio_init(
     }
 
     // create channels
-    check_and_exec(
-            PhidgetVoltageInput_create,
-            ret,
-            p_ret,
-            &pio->h_1143);
+    for(idx = PIO_SENSOR_1143; idx <= PIO_SENSOR_1127; idx += 1)
+    {
+        check_and_exec(
+                PhidgetVoltageInput_create,
+                ret,
+                p_ret,
+                &pio->sensors[idx].h_vin);
+    }
 
-    check_and_exec(
-            PhidgetVoltageInput_create,
-            ret,
-            p_ret,
-            &pio->h_1127);
-
-    check_and_exec(
-            PhidgetVoltageRatioInput_create,
-            ret,
-            p_ret,
-            &pio->h_1125_humid);
-
-    check_and_exec(
-            PhidgetVoltageRatioInput_create,
-            ret,
-            p_ret,
-            &pio->h_1125_temp);
+    for(idx = PIO_SENSOR_1125_HUMID; idx <= PIO_SENSOR_1125_TEMP; idx += 1)
+    {
+        check_and_exec(
+                PhidgetVoltageRatioInput_create,
+                ret,
+                p_ret,
+                &pio->sensors[idx].h_vrin);
+    }
 
     // set channel indices
-    check_and_exec(
-            Phidget_setChannel,
-            ret,
-            p_ret,
-            (PhidgetHandle) pio->h_1143,
-            AIN_CHANNEL_1143);
+    for(idx = PIO_SENSOR_1143; idx <= PIO_SENSOR_1127; idx += 1)
+    {
+        check_and_exec(
+                Phidget_setChannel,
+                ret,
+                p_ret,
+                (PhidgetHandle) pio->sensors[idx].h_vin,
+                INDEX_TO_CHANNEL[idx]);
+    }
 
-    check_and_exec(
-            Phidget_setChannel,
-            ret,
-            p_ret,
-            (PhidgetHandle) pio->h_1127,
-            AIN_CHANNEL_1127);
+    for(idx = PIO_SENSOR_1125_HUMID; idx <= PIO_SENSOR_1125_TEMP; idx += 1)
+    {
+        check_and_exec(
+                Phidget_setChannel,
+                ret,
+                p_ret,
+                (PhidgetHandle) pio->sensors[idx].h_vrin,
+                INDEX_TO_CHANNEL[idx]);
+    }
 
-    check_and_exec(
-            Phidget_setChannel,
-            ret,
-            p_ret,
-            (PhidgetHandle) pio->h_1125_humid,
-            AIN_CHANNEL_1125_HUMID);
+    // enforce sn if specified
+    if(sn > 0)
+    {
+        for(idx = PIO_SENSOR_1143; idx <= PIO_SENSOR_1127; idx += 1)
+        {
+            check_and_exec(
+                    Phidget_setDeviceSerialNumber,
+                    ret,
+                    p_ret,
+                    (PhidgetHandle) pio->sensors[idx].h_vin,
+                    (int32_t) sn);
+        }
 
-    check_and_exec(
-            Phidget_setChannel,
-            ret,
-            p_ret,
-            (PhidgetHandle) pio->h_1125_temp,
-            AIN_CHANNEL_1125_TEMP);
+        for(idx = PIO_SENSOR_1125_HUMID; idx <= PIO_SENSOR_1125_TEMP; idx += 1)
+        {
+            check_and_exec(
+                    Phidget_setDeviceSerialNumber,
+                    ret,
+                    p_ret,
+                    (PhidgetHandle) pio->sensors[idx].h_vrin,
+                    (int32_t) sn);
+        }
+    }
+
+    // open
+    for(idx = PIO_SENSOR_1143; idx <= PIO_SENSOR_1127; idx += 1)
+    {
+        check_and_exec(
+                Phidget_openWaitForAttachment,
+                ret,
+                p_ret,
+                (PhidgetHandle) pio->sensors[idx].h_vin,
+                OPEN_TIMEOUT_MS);
+    }
+
+    for(idx = PIO_SENSOR_1125_HUMID; idx <= PIO_SENSOR_1125_TEMP; idx += 1)
+    {
+        check_and_exec(
+                Phidget_openWaitForAttachment,
+                ret,
+                p_ret,
+                (PhidgetHandle) pio->sensors[idx].h_vrin,
+                OPEN_TIMEOUT_MS);
+    }
+
+    // get serial number from any channel
+    if(ret == 0)
+    {
+        int32_t dev_sn = 0;
+
+        p_ret = Phidget_getDeviceSerialNumber(
+                (PhidgetHandle) pio->sensors[0].h_vin,
+                &dev_sn);
+        
+        if(p_ret != EPHIDGET_OK)
+        {
+            ret = p_err("Phidget_getDeviceSerialNumber", p_ret);
+        }
+        else
+        {
+            pio->serial_number = (unsigned long) dev_sn;
+
+            (void) fprintf(
+                    stdout,
+                    "found device with serial number '%ld'\n",
+                    (long) dev_sn);
+        }
+    }
 
     // set channel sensor types
     check_and_exec(
             PhidgetVoltageInput_setSensorType,
             ret,
             p_ret,
-            pio->h_1143,
+            pio->sensors[PIO_SENSOR_1143].h_vin,
             SENSOR_TYPE_1143);
 
     check_and_exec(
             PhidgetVoltageInput_setSensorType,
             ret,
             p_ret,
-            pio->h_1127,
+            pio->sensors[PIO_SENSOR_1127].h_vin,
             SENSOR_TYPE_1127);
 
     check_and_exec(
             PhidgetVoltageRatioInput_setSensorType,
             ret,
             p_ret,
-            pio->h_1125_humid,
+            pio->sensors[PIO_SENSOR_1125_HUMID].h_vrin,
             SENSOR_TYPE_1125_HUMIDITY);
 
     check_and_exec(
             PhidgetVoltageRatioInput_setSensorType,
             ret,
             p_ret,
-            pio->h_1125_temp,
+            pio->sensors[PIO_SENSOR_1125_TEMP].h_vrin,
             SENSOR_TYPE_1125_TEMPERATURE);
 
-    if(sn > 0)
+    // populate sensor info
+    for(idx = PIO_SENSOR_1143; idx <= PIO_SENSOR_1127; idx += 1)
     {
         check_and_exec(
-                Phidget_setDeviceSerialNumber,
+                PhidgetVoltageInput_getSensorUnit,
                 ret,
                 p_ret,
-                (PhidgetHandle) pio->h_1143,
-                (int32_t) sn);
-
-        check_and_exec(
-                Phidget_setDeviceSerialNumber,
-                ret,
-                p_ret,
-                (PhidgetHandle) pio->h_1127,
-                (int32_t) sn);
-
-        check_and_exec(
-                Phidget_setDeviceSerialNumber,
-                ret,
-                p_ret,
-                (PhidgetHandle) pio->h_1125_humid,
-                (int32_t) sn);
-
-        check_and_exec(
-                Phidget_setDeviceSerialNumber,
-                ret,
-                p_ret,
-                (PhidgetHandle) pio->h_1125_temp,
-                (int32_t) sn);
+                pio->sensors[idx].h_vin,
+                &pio->sensors[idx].unit_info);
     }
 
-    check_and_exec(
-            Phidget_openWaitForAttachment,
-            ret,
-            p_ret,
-            (PhidgetHandle) pio->h_1143,
-            OPEN_TIMEOUT_MS);
+    for(idx = PIO_SENSOR_1125_HUMID; idx <= PIO_SENSOR_1125_TEMP; idx += 1)
+    {
+        check_and_exec(
+                PhidgetVoltageRatioInput_getSensorUnit,
+                ret,
+                p_ret,
+                pio->sensors[idx].h_vrin,
+                &pio->sensors[idx].unit_info);
+    }
 
-    check_and_exec(
-            Phidget_openWaitForAttachment,
-            ret,
-            p_ret,
-            (PhidgetHandle) pio->h_1127,
-            OPEN_TIMEOUT_MS);
-
-    check_and_exec(
-            Phidget_openWaitForAttachment,
-            ret,
-            p_ret,
-            (PhidgetHandle) pio->h_1125_humid,
-            OPEN_TIMEOUT_MS);
-
-    check_and_exec(
-            Phidget_openWaitForAttachment,
-            ret,
-            p_ret,
-            (PhidgetHandle) pio->h_1125_temp,
-            OPEN_TIMEOUT_MS);
+    for(idx = 0; idx < PIO_SENSOR_KIND_COUNT; idx += 1)
+    {
+        (void) fprintf(                            
+                stdout,                            
+                "[%lu]\n  unit: 0x%lX\n  name: '%s'\n  symbol: '%s'\n",                            
+                idx,
+                (unsigned long) pio->sensors[idx].unit_info.unit,
+                pio->sensors[idx].unit_info.name,
+                pio->sensors[idx].unit_info.symbol);
+    }
 
     return ret;
 }
@@ -218,56 +256,84 @@ int pio_init(
 void pio_fini(
         pio_s * const pio)
 {
+    unsigned long idx;
     PhidgetReturnCode p_ret;
 
     if(pio != NULL)
     {
-        p_ret = Phidget_close((PhidgetHandle) pio->h_1143);
-        if(p_ret != EPHIDGET_OK)
+        for(idx = PIO_SENSOR_1143; idx <= PIO_SENSOR_1127; idx += 1)
         {
-            (void) p_err("Phidget_close (1143)", p_ret);
+            p_ret = Phidget_close((PhidgetHandle) pio->sensors[idx].h_vin);
+            if(p_ret != EPHIDGET_OK)
+            {
+                (void) p_err("Phidget_close", p_ret);
+            }
+
+            p_ret = PhidgetVoltageInput_delete(&pio->sensors[idx].h_vin);
+            if(p_ret != EPHIDGET_OK)
+            {
+                (void) p_err("PhidgetVoltageInput_delete", p_ret);
+            }
         }
 
-        p_ret = Phidget_close((PhidgetHandle) pio->h_1127);
-        if(p_ret != EPHIDGET_OK)
+        for(idx = PIO_SENSOR_1125_HUMID; idx <= PIO_SENSOR_1125_TEMP; idx += 1)
         {
-            (void) p_err("Phidget_close (1127)", p_ret);
-        }
+            p_ret = Phidget_close((PhidgetHandle) pio->sensors[idx].h_vrin);
+            if(p_ret != EPHIDGET_OK)
+            {
+                (void) p_err("Phidget_close", p_ret);
+            }
 
-        p_ret = Phidget_close((PhidgetHandle) pio->h_1125_humid);
-        if(p_ret != EPHIDGET_OK)
-        {
-            (void) p_err("Phidget_close (1125-humid)", p_ret);
-        }
-
-        p_ret = Phidget_close((PhidgetHandle) pio->h_1125_temp);
-        if(p_ret != EPHIDGET_OK)
-        {
-            (void) p_err("Phidget_close (1125-temp)", p_ret);
-        }
-
-        p_ret = PhidgetVoltageInput_delete(&pio->h_1143);
-        if(p_ret != EPHIDGET_OK)
-        {
-            (void) p_err("PhidgetVoltageInput_delete (1143)", p_ret);
-        }
-
-        p_ret = PhidgetVoltageInput_delete(&pio->h_1127);
-        if(p_ret != EPHIDGET_OK)
-        {
-            (void) p_err("PhidgetVoltageInput_delete (1127)", p_ret);
-        }
-
-        p_ret = PhidgetVoltageRatioInput_delete(&pio->h_1125_humid);
-        if(p_ret != EPHIDGET_OK)
-        {
-            (void) p_err("PhidgetVoltageRatioInput_delete (1125-humid)", p_ret);
-        }
-
-        p_ret = PhidgetVoltageRatioInput_delete(&pio->h_1125_temp);
-        if(p_ret != EPHIDGET_OK)
-        {
-            (void) p_err("PhidgetVoltageRatioInput_delete (1125-temp)", p_ret);
+            p_ret = PhidgetVoltageRatioInput_delete(&pio->sensors[idx].h_vrin);
+            if(p_ret != EPHIDGET_OK)
+            {
+                (void) p_err("PhidgetVoltageRatioInput_delete", p_ret);
+            }
         }
     }
+}
+
+int pio_poll(
+        pio_s * const pio,
+        pio_measurement_s * const measurement)
+{
+    int ret = 0;
+    unsigned long idx;
+    unsigned long v_idx;
+    PhidgetReturnCode p_ret;
+
+    if(pio == NULL)
+    {
+        ret = -1;
+    }
+
+    v_idx = 0;
+    for(idx = PIO_SENSOR_1143; idx <= PIO_SENSOR_1127; idx += 1, v_idx += 1)
+    {
+        check_and_exec(
+                PhidgetVoltageInput_getSensorValue,
+                ret,
+                p_ret,
+                pio->sensors[idx].h_vin,
+                &measurement->values[v_idx]);
+    }
+
+    for(idx = PIO_SENSOR_1125_HUMID; idx <= PIO_SENSOR_1125_TEMP; idx += 1, v_idx += 1)
+    {
+        check_and_exec(
+                PhidgetVoltageRatioInput_getSensorValue,
+                ret,
+                p_ret,
+                pio->sensors[idx].h_vrin,
+                &measurement->values[v_idx]);
+    }
+
+    if(ret == 0)
+    {
+        ret = clock_gettime(
+                CLOCK_REALTIME,
+                &measurement->timestamp);
+    }
+
+    return ret;
 }
