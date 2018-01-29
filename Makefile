@@ -4,7 +4,12 @@
 
 TARGET := bin/garden-monitor
 
-SRCS := src/atimer.c src/pio.c src/pio_ring.c src/main.c
+SRCS := \
+		src/atimer.c \
+		src/pio.c \
+		src/pio_ring.c \
+		src/gui.c \
+		src/main.c
 
 OBJS := $(SRCS:.c=.o)
 DEPS := $(SRCS:.c=.dep)
@@ -21,9 +26,15 @@ CCFLAGS += -Wall -Wextra -Werror \
 
 LDFLAGS =
 
-INCLUDES = -Iinclude
+INCLUDES = -Iinclude \
+        -I/opt/vc/include \
+        -I/opt/vc/include/interface/vmcs_host/linux \
+        -I/opt/vc/include/interface/vcos/pthreads
 
-LIBS = -lpthread -lrt -lphidget22 -lpopt
+LIBS = -L/opt/vc/lib \
+        -lEGL -lGLESv2 -lbcm_host \
+        -lpthread -lrt -lm \
+        -lshapes -lao -lphidget22 -lpopt
 
 all: dirs $(TARGET)
 

@@ -1,11 +1,11 @@
 /**
- * @file pio.h
- * @brief Phidgets I/O interface.
+ * @file gui.h
+ * @brief TODO.
  *
  */
 
-#ifndef PIO_H
-#define PIO_H
+#ifndef GUI_H
+#define GUI_H
 
 #include "gui_defs.h"
 
@@ -19,7 +19,7 @@ int gui_init(
 void gui_fini(
         gui_s * const gui);
 
-int gui_render(
+void gui_render(
         gui_s * const gui);
 
-#endif  /* PIO_H */
+#endif  /* GUI_H */

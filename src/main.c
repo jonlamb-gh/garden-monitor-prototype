@@ -16,6 +16,8 @@
 #include "atimer.h"
 #include "pio.h"
 #include "pio_ring.h"
+#include "gui_defs.h"
+#include "gui.h"
 
 // TODO - add more options for these
 #define DEF_DATA_POLL_INTERVAL_MS (500UL)
@@ -71,6 +73,7 @@ int main(int argc, char **argv)
     pio_s pio;
     pio_ring_s pio_ring;
     atimer_s data_poll_timer;
+    gui_s gui;
 
     const struct itimerspec data_poll_timer_spec =
     {
@@ -182,6 +185,18 @@ int main(int argc, char **argv)
                 NULL,
                 &data_poll_timer);
     }
+    
+    (void) memset(&gui, 0, sizeof(gui));
+
+    if(ret == 0)
+    {
+        ret = gui_init(
+                0,
+                0,
+                800,
+                800,
+                &gui);
+    }
 
     // enable timers
     if(ret == 0)
@@ -221,7 +236,12 @@ int main(int argc, char **argv)
         {
             ret = pio_ring_put(&measurement, &pio_ring);
         }
+
+        // TODO - render timer
+        gui_render(&gui);
     }
+
+    gui_fini(&gui);
 
     pio_fini(&pio);
 

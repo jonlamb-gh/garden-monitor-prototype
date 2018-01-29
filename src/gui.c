@@ -1,5 +1,5 @@
 /**
- * @file rpigui.c
+ * @file gui.c
  * @brief TODO.
  *
  * TODO - error handling
@@ -16,6 +16,7 @@
 #include <shapes.h>
 
 #include "gui_defs.h"
+#include "gui.h"
 
 static void render_all(
         gui_s * const gui)
@@ -45,6 +46,10 @@ int gui_init(
     gui->window.width = width;
     gui->window.height = height;
 
+    gui->background_color_rgb[0] = 0xFF;
+    gui->background_color_rgb[1] = 0xFF;
+    gui->background_color_rgb[2] = 0xFF;
+
     initWindowSize(
             (int) x,
             (int) y,
@@ -66,13 +71,11 @@ void gui_fini(
     finish();
 }
 
-int gui_render(
+void gui_render(
         gui_s * const gui)
 {
     if(gui != NULL)
     {
         render_all(gui);
     }
-
-    return 0;
 }
