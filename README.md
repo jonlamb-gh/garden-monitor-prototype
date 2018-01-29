@@ -4,4 +4,4 @@ Prototype project to monitor garden environment
 Dependencies:
 
 - [openvg](https://github.com/ajstarks/openvg)
-- TODO
+- [rpi-fbcp](https://github.com/tasanakorn/rpi-fbcp)
