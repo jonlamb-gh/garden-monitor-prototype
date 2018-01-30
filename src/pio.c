@@ -76,6 +76,27 @@ int pio_init(
         ret = -1;
     }
 
+    // set names
+    (void) strncpy(
+            pio->sensors[PIO_SENSOR_1143].sensor_info,
+            "1143 W",
+            sizeof(pio->sensors[PIO_SENSOR_1143].sensor_info));
+
+    (void) strncpy(
+            pio->sensors[PIO_SENSOR_1127].sensor_info,
+            "1127 P",
+            sizeof(pio->sensors[PIO_SENSOR_1127].sensor_info));
+
+    (void) strncpy(
+            pio->sensors[PIO_SENSOR_1125_HUMID].sensor_info,
+            "1125_HUMID",
+            sizeof(pio->sensors[PIO_SENSOR_1125_HUMID].sensor_info));
+
+    (void) strncpy(
+            pio->sensors[PIO_SENSOR_1125_TEMP].sensor_info,
+            "1125_TEMP",
+            sizeof(pio->sensors[PIO_SENSOR_1125_TEMP].sensor_info));
+
     // create channels
     for(idx = PIO_SENSOR_1143; idx <= PIO_SENSOR_1127; idx += 1)
     {

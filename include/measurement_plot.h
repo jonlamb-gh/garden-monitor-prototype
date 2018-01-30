@@ -44,9 +44,20 @@ typedef struct
 
 typedef struct
 {
+    VGfloat offset_x;
+    VGfloat offset_tick;
+    VGfloat offset_tick_real;
+    void *font;
+    VGfloat font_height;
+    char string[256];
+} mp_axis_s;
+
+typedef struct
+{
     mp_grid_s grid;
     mp_legend_s legend;
     mp_viewport_s viewports[PIO_SENSOR_KIND_COUNT];
+    mp_axis_s axes[PIO_SENSOR_KIND_COUNT];
 } measurement_plot_s;
 
 void measurement_plot_apply_default_config(

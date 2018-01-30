@@ -10,6 +10,8 @@
 #include <time.h>
 #include <phidget22.h>
 
+#define PIO_MEASUREMENT_VALUE_INVALID (-9999.0)
+
 enum pio_sensor_e
 {
     PIO_SENSOR_1143 = 0,
@@ -27,6 +29,7 @@ typedef struct
 
 typedef struct
 {
+    char sensor_info[256];
     Phidget_UnitInfo unit_info;
     union
     {

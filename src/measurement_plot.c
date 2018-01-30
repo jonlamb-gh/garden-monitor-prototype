@@ -50,7 +50,7 @@ static void render_grid(
     VGfloat ix;
     VGfloat iy;
 
-    Stroke(128, 128, 128, 0.5f);
+    Stroke(128, 128, 128, 0.2f);
     StrokeWidth(2.0f);
 
     for(ix = grid->x; ix <= (grid->x + grid->w); ix += grid->dx)
@@ -74,7 +74,8 @@ static void render_sensor_legend(
     snprintf(
             legend->string,
             sizeof(legend->string),
-            "  - %.2f %s",
+            "  - %s - %.2f %s",
+            sensor->sensor_info,
             last_value,
             sensor->unit_info.symbol);
 
@@ -95,20 +96,64 @@ static void render_sensor_legend(
     render_coord(
             legend->tx + DEF_LEGEND_ICON_OFFSET,
             legend->ty - sensor_offset + DEF_LEGEND_ICON_OFFSET,
-            vp->coord_size);
+            vp->coord_size * 2.0f);
+}
+
+static void render_sensor_axis(
+        const mp_grid_s * const grid,
+        const mp_viewport_s * const vp,
+        mp_axis_s * const axis)
+{
+    VGfloat ty;
+    unsigned long idx;
+
+    Fill(vp->rgb[0], vp->rgb[1], vp->rgb[2], 1.0f);
+    Stroke(vp->rgb[0], vp->rgb[1], vp->rgb[2], 1.0f);
+    StrokeWidth(2.0f);
+
+    Line(axis->offset_x, grid->y, axis->offset_x, grid->y + grid->h);
+
+    for(ty = grid->y, idx = 0; ty <= (grid->y + grid->h); ty += axis->offset_tick, idx += 1)
+    {
+        Stroke(vp->rgb[0], vp->rgb[1], vp->rgb[2], 1.0f);
+        StrokeWidth(2.0f);
+
+        Line(
+                axis->offset_x - DEF_AXIS_LENGTH_TICK_HALF,
+                ty,
+                axis->offset_x + DEF_AXIS_LENGTH_TICK_HALF,
+                ty);
+
+        Stroke(0, 0, 0, 1.0f);
+        StrokeWidth(0.0f);
+
+        snprintf(
+                axis->string,
+                sizeof(axis->string),
+                "%.0f",
+                (VGfloat) idx * axis->offset_tick_real);
+
+        TextEnd(
+                axis->offset_x - (2 * DEF_AXIS_LENGTH_TICK_HALF),
+                ty - (axis->font_height/2.0f),
+                axis->string,
+                *((Fontinfo*) axis->font),
+                (int) DEF_FONT_POINT_SIZE_AXIS_TICK);
+    }
 }
 
 void measurement_plot_apply_default_config(
         measurement_plot_s * const plot)
 {
-    plot->grid.x = 0;
-    plot->grid.y = 0;
-    plot->grid.w = (VGfloat) DEF_SCREEN_WIDTH;
-    plot->grid.h = (VGfloat) DEF_SCREEN_HEIGHT;
+    unsigned long idx;
+
+    plot->grid.x = DEF_GRID_OFFSET;
+    plot->grid.y = DEF_GRID_OFFSET;
+    plot->grid.w = (VGfloat) DEF_SCREEN_WIDTH - (2 * DEF_GRID_OFFSET);
+    plot->grid.h = (VGfloat) DEF_SCREEN_HEIGHT - (2 * DEF_GRID_OFFSET);
     plot->grid.dx = DEF_GRID_SPACING;
     plot->grid.dy = DEF_GRID_SPACING * (plot->grid.h/plot->grid.w);
 
-    unsigned long idx;
     for(idx = 0; idx < PIO_SENSOR_KIND_COUNT; idx += 1)
     {
         plot->viewports[idx].scale_x =
@@ -123,12 +168,15 @@ void measurement_plot_apply_default_config(
     plot->viewports[PIO_SENSOR_1143].scale_y = DEF_PLOT_SCALE_Y_1143;
     plot->viewports[PIO_SENSOR_1143].rgb[0] = 0xFF;
     plot->viewports[PIO_SENSOR_1127].scale_y = DEF_PLOT_SCALE_Y_1127;
-    plot->viewports[PIO_SENSOR_1127].rgb[1] = 0xFF;
+    plot->viewports[PIO_SENSOR_1127].rgb[0] = 60;
+    plot->viewports[PIO_SENSOR_1127].rgb[1] = 180;
+    plot->viewports[PIO_SENSOR_1127].rgb[2] = 75;
     plot->viewports[PIO_SENSOR_1125_HUMID].scale_y = DEF_PLOT_SCALE_Y_1125_HUMID;
     plot->viewports[PIO_SENSOR_1125_HUMID].rgb[2] = 0xFF;
     plot->viewports[PIO_SENSOR_1125_TEMP].scale_y = DEF_PLOT_SCALE_Y_1125_TEMP;
-    plot->viewports[PIO_SENSOR_1125_TEMP].rgb[1] = 0xFF;
-    plot->viewports[PIO_SENSOR_1125_TEMP].rgb[2] = 0xFF;
+    plot->viewports[PIO_SENSOR_1125_TEMP].rgb[0] = 245;
+    plot->viewports[PIO_SENSOR_1125_TEMP].rgb[1] = 130;
+    plot->viewports[PIO_SENSOR_1125_TEMP].rgb[2] = 48;
 
     plot->legend.font = font_get(FONT_SARIF_TYPE_FACE);
     plot->legend.font_height = TextHeight(
@@ -147,6 +195,29 @@ void measurement_plot_apply_default_config(
         plot->legend.sensor_offsets[idx] =
                 ((VGfloat) idx) * (plot->legend.font_height + (plot->legend.font_height / 6.0f));
     }
+
+    for(idx = 0; idx < PIO_SENSOR_KIND_COUNT; idx += 1)
+    {
+        plot->axes[idx].font = font_get(FONT_SARIF_TYPE_FACE);
+        plot->axes[idx].font_height = TextHeight(
+                *((Fontinfo*) plot->axes[idx].font),
+                (int) DEF_FONT_POINT_SIZE_AXIS_TICK);
+        plot->axes[idx].offset_x =
+                DEF_AXIS_OFFSET_X + (((VGfloat) idx) * DEF_AXIS_OFFSET_X_DELTA);
+    }
+
+    plot->axes[PIO_SENSOR_1143].offset_tick_real = DEF_AXIS_OFFSET_TICK_1143;
+    plot->axes[PIO_SENSOR_1143].offset_tick =
+            DEF_AXIS_OFFSET_TICK_1143 * plot->viewports[PIO_SENSOR_1143].scale_y;
+    plot->axes[PIO_SENSOR_1127].offset_tick_real = DEF_AXIS_OFFSET_TICK_1127;
+    plot->axes[PIO_SENSOR_1127].offset_tick =
+            DEF_AXIS_OFFSET_TICK_1127 * plot->viewports[PIO_SENSOR_1127].scale_y;
+    plot->axes[PIO_SENSOR_1125_HUMID].offset_tick_real = DEF_AXIS_OFFSET_TICK_1125_HUMID;
+    plot->axes[PIO_SENSOR_1125_HUMID].offset_tick =
+            DEF_AXIS_OFFSET_TICK_1125_HUMID * plot->viewports[PIO_SENSOR_1125_HUMID].scale_y;
+    plot->axes[PIO_SENSOR_1125_TEMP].offset_tick_real = DEF_AXIS_OFFSET_TICK_1125_TEMP;
+    plot->axes[PIO_SENSOR_1125_TEMP].offset_tick =
+            DEF_AXIS_OFFSET_TICK_1125_TEMP * plot->viewports[PIO_SENSOR_1125_TEMP].scale_y;
 }
 
 void measurement_plot_render_pio_ring(
@@ -156,11 +227,11 @@ void measurement_plot_render_pio_ring(
 {
     const pio_measurement_s *last_m = NULL;
     unsigned long x_index = 0;
+    unsigned long s_idx;
+    unsigned long r_idx;
 
     render_grid(&plot->grid);
 
-    unsigned long s_idx;
-    unsigned long r_idx;
     for(r_idx = ring->tail; r_idx != ring->head; r_idx = (r_idx + 1) & ring->mask)
     {
         const pio_measurement_s * const m = &ring->buffer[r_idx];
@@ -185,5 +256,10 @@ void measurement_plot_render_pio_ring(
                 plot->legend.sensor_offsets[s_idx],
                 &plot->viewports[s_idx],
                 &plot->legend);
+
+        render_sensor_axis(
+                &plot->grid,
+                &plot->viewports[s_idx],
+                &plot->axes[s_idx]);
     }
 }
