@@ -194,7 +194,7 @@ int main(int argc, char **argv)
                 0,
                 0,
                 800,
-                800,
+                480,
                 &gui);
     }
 
@@ -238,7 +238,7 @@ int main(int argc, char **argv)
         }
 
         // TODO - render timer
-        gui_render(&gui);
+        gui_render(&pio_ring, &gui);
     }
 
     gui_fini(&gui);

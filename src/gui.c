@@ -19,6 +19,7 @@
 #include "gui.h"
 
 static void render_all(
+        const pio_ring_s * const ring,
         gui_s * const gui)
 {
     Background(
@@ -26,7 +27,9 @@ static void render_all(
             gui->background_color_rgb[1],
             gui->background_color_rgb[2]);
 
-    // TODO
+    measurement_plot_render_ring(
+            ring,
+            &gui->mplot);
 
     End();
 }
@@ -50,6 +53,8 @@ int gui_init(
     gui->background_color_rgb[1] = 0xFF;
     gui->background_color_rgb[2] = 0xFF;
 
+    measurement_plot_apply_default_config(&gui->mplot);
+
     initWindowSize(
             (int) x,
             (int) y,
@@ -57,6 +62,12 @@ int gui_init(
             (unsigned int) height);
 
     init(&screen_width, &screen_height);
+
+    (void) fprintf(
+            stdout,
+            "gui screen size = (%lu, %lu)\n",
+            gui->window.width,
+            gui->window.height);
 
     Start((int) width, (int) height);
 
@@ -72,10 +83,11 @@ void gui_fini(
 }
 
 void gui_render(
+        const pio_ring_s * const ring,
         gui_s * const gui)
 {
     if(gui != NULL)
     {
-        render_all(gui);
+        render_all(ring, gui);
     }
 }
