@@ -13,15 +13,12 @@
 #include <semaphore.h>
 #include <popt.h>
 
+#include "default_config.h"
 #include "atimer.h"
 #include "pio.h"
 #include "pio_ring.h"
 #include "gui_defs.h"
 #include "gui.h"
-
-// TODO - add more options for these
-#define DEF_DATA_POLL_INTERVAL_MS (500UL)
-#define DEF_RING_BUFFER_LENGTH (128UL)
 
 enum option_e
 {
@@ -193,8 +190,8 @@ int main(int argc, char **argv)
         ret = gui_init(
                 0,
                 0,
-                800,
-                480,
+                DEF_SCREEN_WIDTH,
+                DEF_SCREEN_HEIGHT,
                 &gui);
     }
 
@@ -226,8 +223,6 @@ int main(int argc, char **argv)
 
         if(ret == 0)
         {
-            // TESTING
-            printf(".");
             ret = pio_poll(&pio, &measurement);
         }
 
@@ -237,8 +232,7 @@ int main(int argc, char **argv)
         }
 
         // TODO - render timer
-        gui_render(&pio_ring, &gui);
-        (void) fflush(stdout);
+        gui_render(&pio, &pio_ring, &gui);
     }
 
     gui_fini(&gui);

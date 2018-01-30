@@ -1,0 +1,36 @@
+/**
+ * @file default_config.h
+ * @brief TODO.
+ *
+ */
+
+#ifndef DEFAULT_CONFIG_H
+#define DEFAULT_CONFIG_H
+
+#define DEF_AIN_CHANNEL_1143 (2)
+#define DEF_AIN_CHANNEL_1127 (3)
+#define DEF_AIN_CHANNEL_1125_HUMID (0)
+#define DEF_AIN_CHANNEL_1125_TEMP (1)
+
+#define DEF_DATA_POLL_INTERVAL_MS (100UL)
+
+#define DEF_RING_BUFFER_LENGTH (128UL)
+
+#define DEF_SCREEN_WIDTH (800UL)
+#define DEF_SCREEN_HEIGHT (480UL)
+
+#define DEF_GRID_SPACING (25.0f)
+
+#define DEF_PLOT_SCALE_Y_1143 (0.5f)
+#define DEF_PLOT_SCALE_Y_1127 (0.5f)
+#define DEF_PLOT_SCALE_Y_1125_HUMID (10.0f)
+#define DEF_PLOT_SCALE_Y_1125_TEMP (10.0f)
+
+#define DEF_LEGEND_OFFSET_X (25)
+#define DEF_LEGEND_OFFSET_Y (40)
+
+#define DEF_LEGEND_ICON_OFFSET (5.0f)
+
+#define DEF_FONT_POINT_SIZE (15)
+
+#endif  /* DEFAULT_CONFIG_H */

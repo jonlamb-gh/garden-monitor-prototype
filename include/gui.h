@@ -9,6 +9,7 @@
 
 #include "gui_defs.h"
 #include "pio_ring.h"
+#include "pio.h"
 
 int gui_init(
         const unsigned long x,
@@ -21,6 +22,7 @@ void gui_fini(
         gui_s * const gui);
 
 void gui_render(
+        const pio_s * const pio,
         const pio_ring_s * const ring,
         gui_s * const gui);
 

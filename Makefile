@@ -8,6 +8,7 @@ SRCS := \
 		src/atimer.c \
 		src/pio.c \
 		src/pio_ring.c \
+		src/font.c \
 		src/measurement_plot.c \
 		src/gui.c \
 		src/main.c

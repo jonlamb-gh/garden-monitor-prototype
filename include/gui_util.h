@@ -1,11 +1,11 @@
 /**
- * @file guiutil.h
+ * @file gui_util.h
  * @brief TODO.
  *
  */
 
-#ifndef GUIUTIL_H
-#define GUIUTIL_H
+#ifndef GUI_UTIL_H
+#define GUI_UTIL_H
 
 /**
  * @brief Minimum of a and b.
@@ -47,4 +47,4 @@
 #define CONSTRAIN(amt, low, high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 #endif
 
-#endif  /* GUIUTIL_H */
+#endif  /* GUI_UTIL_H */

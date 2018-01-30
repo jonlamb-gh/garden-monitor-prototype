@@ -19,6 +19,7 @@
 #include "gui.h"
 
 static void render_all(
+        const pio_s * const pio,
         const pio_ring_s * const ring,
         gui_s * const gui)
 {
@@ -27,7 +28,8 @@ static void render_all(
             gui->background_color_rgb[1],
             gui->background_color_rgb[2]);
 
-    measurement_plot_render_ring(
+    measurement_plot_render_pio_ring(
+            pio,
             ring,
             &gui->mplot);
 
@@ -53,8 +55,6 @@ int gui_init(
     gui->background_color_rgb[1] = 0xFF;
     gui->background_color_rgb[2] = 0xFF;
 
-    measurement_plot_apply_default_config(&gui->mplot);
-
     initWindowSize(
             (int) x,
             (int) y,
@@ -62,6 +62,9 @@ int gui_init(
             (unsigned int) height);
 
     init(&screen_width, &screen_height);
+
+    // init after OpenVG init, so we can get the font heights
+    measurement_plot_apply_default_config(&gui->mplot);
 
     (void) fprintf(
             stdout,
@@ -83,11 +86,12 @@ void gui_fini(
 }
 
 void gui_render(
+        const pio_s * const pio,
         const pio_ring_s * const ring,
         gui_s * const gui)
 {
     if(gui != NULL)
     {
-        render_all(ring, gui);
+        render_all(pio, ring, gui);
     }
 }

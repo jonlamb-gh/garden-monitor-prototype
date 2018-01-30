@@ -14,14 +14,10 @@
 #include <stdint.h>
 #include <phidget22.h>
 
+#include "default_config.h"
 #include "pio.h"
 
 #define OPEN_TIMEOUT_MS (5000)
-
-#define AIN_CHANNEL_1143 (3)
-#define AIN_CHANNEL_1127 (2)
-#define AIN_CHANNEL_1125_HUMID (0)
-#define AIN_CHANNEL_1125_TEMP (1)
 
 #define check_and_exec(fx, r, pr, ...) \
 { \
@@ -37,10 +33,10 @@
 
 static const int INDEX_TO_CHANNEL[] =
 {
-    [PIO_SENSOR_1143] = AIN_CHANNEL_1143,
-    [PIO_SENSOR_1127] = AIN_CHANNEL_1127,
-    [PIO_SENSOR_1125_HUMID] = AIN_CHANNEL_1125_HUMID,
-    [PIO_SENSOR_1125_TEMP] = AIN_CHANNEL_1125_TEMP
+    [PIO_SENSOR_1143] = DEF_AIN_CHANNEL_1143,
+    [PIO_SENSOR_1127] = DEF_AIN_CHANNEL_1127,
+    [PIO_SENSOR_1125_HUMID] = DEF_AIN_CHANNEL_1125_HUMID,
+    [PIO_SENSOR_1125_TEMP] = DEF_AIN_CHANNEL_1125_TEMP
 };
 
 static int p_err(
