@@ -98,14 +98,10 @@ void measurement_plot_render_ring(
     {
         const pio_measurement_s * const m = &ring->buffer[idx];
 
-        //printf("v[%lu] = %f\n", idx, m->values[PIO_SENSOR_1125_TEMP]);
-        //printf("v[%lu] = %f\n", idx, m->values[PIO_SENSOR_1143]);
-
-        //PIO_SENSOR_1125_TEMP
-        
-        const VGfloat x = (VGfloat) (cnt * 800.0f/128.0f);
-        const VGfloat y = (VGfloat) m->values[PIO_SENSOR_1143] * 100.0f;
-        //const VGfloat y = (VGfloat) m->values[PIO_SENSOR_1143];
+        const VGfloat y_scale = 300.0f;
+        const VGfloat dx = (800.0f / 128.0f);
+        const VGfloat x = ((VGfloat) cnt) * dx;
+        const VGfloat y = (VGfloat) m->values[PIO_SENSOR_1143] * y_scale;
 
         draw_coord(x, y, plot);
 
