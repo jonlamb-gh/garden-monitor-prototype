@@ -228,7 +228,6 @@ int main(int argc, char **argv)
         {
             // TESTING
             printf(".");
-            (void) fflush(stdout);
             ret = pio_poll(&pio, &measurement);
         }
 
@@ -239,6 +238,7 @@ int main(int argc, char **argv)
 
         // TODO - render timer
         gui_render(&pio_ring, &gui);
+        (void) fflush(stdout);
     }
 
     gui_fini(&gui);
