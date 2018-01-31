@@ -24,7 +24,8 @@
 enum option_e
 {
     OPTION_VERBOSE = 1,
-    OPTION_SERIAL_NUMBER = 2
+    OPTION_SERIAL_NUMBER = 2,
+    OPTION_CSV_LOG = 3
 };
 
 static volatile sig_atomic_t global_exit_signal;
@@ -64,8 +65,10 @@ static void timer_callback(union sigval data)
 int main(int argc, char **argv)
 {
     int ret = 0;
-    long serial_number = 0;
     int verbose = 0;
+    long serial_number = 0;
+    char *zlog_cat_name = NULL;
+    int zlog_enabled = 0;
     struct sigaction sigact;
     poptContext opt_ctx;
     pio_s pio;
@@ -90,9 +93,18 @@ int main(int argc, char **argv)
             's',
             POPT_ARG_LONG,
             &serial_number,
-            OPTION_SERIAL_NUMBER | POPT_ARGFLAG_OPTIONAL,
+            OPTION_SERIAL_NUMBER,
             "serial number of device to open",
             "'Phidget serial number (0 means any)'"
+        },
+        {
+            "log",
+            'o',
+            POPT_ARG_STRING | POPT_ARGFLAG_OPTIONAL,
+            &zlog_cat_name,
+            OPTION_CSV_LOG,
+            "enable zlog CSV category logging",
+            "'category name' default is 'gm'"
         },
         POPT_AUTOHELP
         POPT_TABLEEND
@@ -111,8 +123,6 @@ int main(int argc, char **argv)
         if(opt_ret == OPTION_VERBOSE)
         {
             verbose = 1;
-            // TODO/TESTING
-            (void) verbose;
         }
         else if(opt_ret == OPTION_SERIAL_NUMBER)
         {
@@ -125,6 +135,10 @@ int main(int argc, char **argv)
                 poptFreeContext(opt_ctx);
                 exit(EXIT_FAILURE);
             }
+        }
+        else if(opt_ret == OPTION_CSV_LOG)
+        {
+            zlog_enabled = 1;
         }
     }
 
@@ -155,16 +169,23 @@ int main(int argc, char **argv)
 
     (void) memset(&pio, 0, sizeof(pio));
 
-    if(ret == 0)
+    if((zlog_enabled != 0) && (ret == 0))
     {
-        ret = dzlog_init(DEF_ZLOG_CONF_FILE, "gm");
+        const char * const category =
+                (zlog_cat_name != NULL) ? zlog_cat_name : "gm";
+
+        if(verbose != 0)
+        {
+            (void) fprintf(
+                    stdout,
+                    "enabled zlog CSV logging with category '%s'\n",
+                    category);
+        }
+
+        ret = dzlog_init(DEF_ZLOG_CONF_FILE, category);
         if(ret != 0)
         {
             (void) fprintf(stderr, "failed to open '%s'\n", DEF_ZLOG_CONF_FILE);
-        }
-        else
-        {
-            dzlog_info("starting new log");
         }
     }
 
@@ -203,7 +224,7 @@ int main(int argc, char **argv)
                 DEF_DATA_POLL_INTERVAL_MS,
                 &data_poll_timer_spec.it_interval);
     }
-    
+
     (void) memset(&gui, 0, sizeof(gui));
 
     if(ret == 0)
@@ -252,7 +273,7 @@ int main(int argc, char **argv)
             ret = pio_ring_put(&measurement, &pio_ring);
         }
 
-        if(ret == 0)
+        if((zlog_enabled != 0) && (ret == 0))
         {
             dzlog_info(
                     "%f, %f, %f, %f",
@@ -262,7 +283,6 @@ int main(int argc, char **argv)
                     measurement.values[3]);
         }
 
-        // TODO - render timer
         gui_render(&pio, &pio_ring, &gui);
     }
 
@@ -270,7 +290,15 @@ int main(int argc, char **argv)
 
     pio_fini(&pio);
 
-    zlog_fini();
+    if(zlog_enabled != 0)
+    {
+        zlog_fini();
+    }
+
+    if(zlog_cat_name != NULL)
+    {
+        free(zlog_cat_name);
+    }
 
     if(ret == 0)
     {

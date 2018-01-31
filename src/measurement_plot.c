@@ -25,7 +25,7 @@ static void render_coord(
         const VGfloat y,
         const VGfloat size)
 {
-    StrokeWidth(0.5f);
+    StrokeWidth(DEF_COORD_STROKE_WIDTH);
     Stroke(0, 0, 0, 1.0f);
 
 	Circle(x, y, size);
@@ -36,7 +36,7 @@ static void render_measurement(
         const VGfloat m,
         const mp_viewport_s * const vp)
 {
-    Fill(vp->rgb[0], vp->rgb[1], vp->rgb[2], 0.5f);
+    Fill(vp->rgb[0], vp->rgb[1], vp->rgb[2], DEF_COORD_COLOR_ALPHA);
 
     render_coord(
             ((VGfloat) x_index * vp->scale_x),
@@ -50,7 +50,7 @@ static void render_grid(
     VGfloat ix;
     VGfloat iy;
 
-    Stroke(128, 128, 128, 0.2f);
+    Stroke(128, 128, 128, DEF_GRID_COLOR_ALPHA);
     StrokeWidth(2.0f);
 
     for(ix = grid->x; ix <= (grid->x + grid->w); ix += grid->dx)
@@ -91,12 +91,12 @@ static void render_sensor_legend(
             *((Fontinfo*) legend->font),
             (int) DEF_FONT_POINT_SIZE);
 
-    Fill(vp->rgb[0], vp->rgb[1], vp->rgb[2], 0.5f);
+    Fill(vp->rgb[0], vp->rgb[1], vp->rgb[2], DEF_COORD_COLOR_ALPHA);
 
     render_coord(
             legend->tx + DEF_LEGEND_ICON_OFFSET,
             legend->ty - sensor_offset + DEF_LEGEND_ICON_OFFSET,
-            vp->coord_size * 2.0f);
+            DEF_COORD_SIZE_LEGEND);
 }
 
 static void render_sensor_axis(
@@ -159,20 +159,24 @@ void measurement_plot_apply_default_config(
         plot->viewports[idx].scale_x =
                 (VGfloat) DEF_SCREEN_WIDTH / (VGfloat) DEF_RING_BUFFER_LENGTH;
         plot->viewports[idx].scale_y = 1.0f;
-        plot->viewports[idx].coord_size = 5.0f;
+        plot->viewports[idx].coord_size = DEF_COORD_SIZE;
         plot->viewports[idx].rgb[0] = 0;
         plot->viewports[idx].rgb[1] = 0;
         plot->viewports[idx].rgb[2] = 0;
     }
 
     plot->viewports[PIO_SENSOR_1143].scale_y = DEF_PLOT_SCALE_Y_1143;
-    plot->viewports[PIO_SENSOR_1143].rgb[0] = 0xFF;
+    plot->viewports[PIO_SENSOR_1143].rgb[0] = 230;
+    plot->viewports[PIO_SENSOR_1143].rgb[1] = 25;
+    plot->viewports[PIO_SENSOR_1143].rgb[2] = 75;
     plot->viewports[PIO_SENSOR_1127].scale_y = DEF_PLOT_SCALE_Y_1127;
     plot->viewports[PIO_SENSOR_1127].rgb[0] = 60;
     plot->viewports[PIO_SENSOR_1127].rgb[1] = 180;
     plot->viewports[PIO_SENSOR_1127].rgb[2] = 75;
     plot->viewports[PIO_SENSOR_1125_HUMID].scale_y = DEF_PLOT_SCALE_Y_1125_HUMID;
-    plot->viewports[PIO_SENSOR_1125_HUMID].rgb[2] = 0xFF;
+    plot->viewports[PIO_SENSOR_1125_HUMID].rgb[0] = 0;
+    plot->viewports[PIO_SENSOR_1125_HUMID].rgb[1] = 130;
+    plot->viewports[PIO_SENSOR_1125_HUMID].rgb[2] = 200;
     plot->viewports[PIO_SENSOR_1125_TEMP].scale_y = DEF_PLOT_SCALE_Y_1125_TEMP;
     plot->viewports[PIO_SENSOR_1125_TEMP].rgb[0] = 245;
     plot->viewports[PIO_SENSOR_1125_TEMP].rgb[1] = 130;
@@ -232,7 +236,7 @@ void measurement_plot_render_pio_ring(
 
     render_grid(&plot->grid);
 
-    for(r_idx = ring->tail; r_idx != ring->head; r_idx = (r_idx + 1) & ring->mask)
+    for(r_idx = ring->tail; r_idx != ring->head; r_idx = (r_idx + 1) % ring->length)
     {
         const pio_measurement_s * const m = &ring->buffer[r_idx];
         last_m = m;
