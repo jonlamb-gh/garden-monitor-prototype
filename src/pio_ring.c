@@ -110,7 +110,7 @@ int pio_ring_put(
     if(ret == 0)
     {
         const unsigned long new_head =
-                (unsigned long) (ring->head + 1) & ring->mask;
+                (unsigned long) (ring->head + 1) % ring->length;
 
         ring->head = new_head;
 
@@ -123,7 +123,7 @@ int pio_ring_put(
         {
             // overflow
             ring->tail =
-                    (unsigned long) (ring->tail + 1) & ring->mask;
+                    (unsigned long) (ring->tail + 1) % ring->length;
         }
     }
 

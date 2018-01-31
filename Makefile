@@ -36,7 +36,7 @@ INCLUDES = -Iinclude \
 LIBS = -L/opt/vc/lib \
         -lEGL -lGLESv2 -lbcm_host \
         -lpthread -lrt -lm \
-        -lshapes -lao -lphidget22 -lpopt
+        -lshapes -lao -lphidget22 -lpopt -lzlog
 
 all: dirs $(TARGET)
 

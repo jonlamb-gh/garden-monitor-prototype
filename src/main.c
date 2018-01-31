@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <popt.h>
+#include <zlog.h>
 
 #include "default_config.h"
 #include "atimer.h"
@@ -71,14 +72,7 @@ int main(int argc, char **argv)
     pio_ring_s pio_ring;
     atimer_s data_poll_timer;
     gui_s gui;
-
-    const struct itimerspec data_poll_timer_spec =
-    {
-        .it_value.tv_sec = 0,
-        .it_value.tv_nsec = (1000ULL * 1000ULL * DEF_DATA_POLL_INTERVAL_MS),
-        .it_interval.tv_sec = 0,
-        .it_interval.tv_nsec = (1000ULL * 1000ULL * DEF_DATA_POLL_INTERVAL_MS)
-    };
+    struct itimerspec data_poll_timer_spec;
 
     const struct poptOption OPTIONS_TABLE[] =
     {
@@ -163,6 +157,19 @@ int main(int argc, char **argv)
 
     if(ret == 0)
     {
+        ret = dzlog_init(DEF_ZLOG_CONF_FILE, "gm");
+        if(ret != 0)
+        {
+            (void) fprintf(stderr, "failed to open '%s'\n", DEF_ZLOG_CONF_FILE);
+        }
+        else
+        {
+            dzlog_info("starting new log");
+        }
+    }
+
+    if(ret == 0)
+    {
         ret = pio_init(serial_number, &pio);
     }
 
@@ -181,6 +188,20 @@ int main(int argc, char **argv)
                 timer_callback,
                 NULL,
                 &data_poll_timer);
+    }
+
+    if(ret == 0)
+    {
+        atimer_timespec_set_ms(
+                DEF_DATA_POLL_INTERVAL_MS,
+                &data_poll_timer_spec.it_value);
+    }
+
+    if(ret == 0)
+    {
+        atimer_timespec_set_ms(
+                DEF_DATA_POLL_INTERVAL_MS,
+                &data_poll_timer_spec.it_interval);
     }
     
     (void) memset(&gui, 0, sizeof(gui));
@@ -231,6 +252,16 @@ int main(int argc, char **argv)
             ret = pio_ring_put(&measurement, &pio_ring);
         }
 
+        if(ret == 0)
+        {
+            dzlog_info(
+                    "%f, %f, %f, %f",
+                    measurement.values[0],
+                    measurement.values[1],
+                    measurement.values[2],
+                    measurement.values[3]);
+        }
+
         // TODO - render timer
         gui_render(&pio, &pio_ring, &gui);
     }
@@ -238,6 +269,8 @@ int main(int argc, char **argv)
     gui_fini(&gui);
 
     pio_fini(&pio);
+
+    zlog_fini();
 
     if(ret == 0)
     {

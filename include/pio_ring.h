@@ -18,7 +18,6 @@ typedef struct
     pio_measurement_s *buffer;
 } pio_ring_s;
 
-// must be a power of 2
 int pio_ring_alloc(
         const unsigned long length,
         pio_ring_s * const ring);
