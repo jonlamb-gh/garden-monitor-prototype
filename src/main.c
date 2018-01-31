@@ -193,7 +193,7 @@ int main(int argc, char **argv)
     if(ret == 0)
     {
         atimer_timespec_set_ms(
-                DEF_DATA_POLL_INTERVAL_MS,
+                DEF_DATA_POLL_START_DELAY_MS,
                 &data_poll_timer_spec.it_value);
     }
 
