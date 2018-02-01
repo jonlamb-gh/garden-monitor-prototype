@@ -266,6 +266,10 @@ int pio_init(
                 pio->sensors[idx].unit_info.name,
                 pio->sensors[idx].unit_info.symbol);
     }
+    
+    // TODO - get rid of this after testing
+    (void) fflush(stdout);
+    (void) fflush(stderr);
 
     return ret;
 }

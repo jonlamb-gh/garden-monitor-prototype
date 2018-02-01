@@ -12,13 +12,13 @@
 ### END INIT INFO
 
 APP=garden-monitor
-
 APP_PATH="/usr/local/bin/$APP"
+LOG_FILE=/tmp/garden-monitord.log
 
 case "$1" in
     start)
         echo "starting $APP"
-        $APP_PATH -o &
+        $APP_PATH -o >> $LOG_FILE 2>&1 &
         ;;
     stop)
         echo "stopping $APP"
