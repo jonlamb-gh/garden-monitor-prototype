@@ -25,7 +25,6 @@ static void render_coord(
         const VGfloat y,
         const VGfloat size)
 {
-    StrokeWidth(DEF_COORD_STROKE_WIDTH);
     Stroke(0, 0, 0, 1.0f);
 
 	Circle(x, y, size);
@@ -36,6 +35,7 @@ static void render_measurement(
         const VGfloat m,
         const mp_viewport_s * const vp)
 {
+    StrokeWidth(0.0f);
     Fill(vp->rgb[0], vp->rgb[1], vp->rgb[2], DEF_COORD_COLOR_ALPHA);
 
     render_coord(
@@ -92,6 +92,7 @@ static void render_sensor_legend(
             (int) DEF_FONT_POINT_SIZE);
 
     Fill(vp->rgb[0], vp->rgb[1], vp->rgb[2], DEF_COORD_COLOR_ALPHA);
+    StrokeWidth(DEF_COORD_STROKE_WIDTH);
 
     render_coord(
             legend->tx + DEF_LEGEND_ICON_OFFSET,
