@@ -1,0 +1,33 @@
+#!/bin/bash
+# /etc/init.d/garden-monitord
+
+### BEGIN INIT INFO
+# Provides:          garden-monitord
+# Required-Start:    $remote_fs $syslog fbcpd
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Startup service for garden-monitor
+# Description:       This service is used to manage garden-monitor
+### END INIT INFO
+
+APP=garden-monitor
+
+APP_PATH="/usr/local/bin/$APP"
+
+case "$1" in
+    start)
+        echo "starting $APP"
+        $APP_PATH -o &
+        ;;
+    stop)
+        echo "stopping $APP"
+        /usr/bin/killall -SIGINT $APP
+        ;;
+    *)
+        echo "Usage: /etc/init.d/garden-monitord start|stop"
+        exit 1
+        ;;
+esac
+
+exit 0

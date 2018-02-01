@@ -1,0 +1,33 @@
+#!/bin/bash
+# /etc/init.d/fbcpd
+
+### BEGIN INIT INFO
+# Provides:          fbcpd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Startup service for fbcp
+# Description:       Startup service for fbcp
+### END INIT INFO
+
+APP=fbcp
+
+APP_PATH="/usr/local/bin/$APP"
+
+case "$1" in
+    start)
+        echo "starting $APP"
+        $APP_PATH &
+        ;;
+    stop)
+        echo "stopping $APP"
+        /usr/bin/killall -SIGINT $APP
+        ;;
+    *)
+        echo "Usage: /etc/init.d/fbcpd start|stop"
+        exit 1
+        ;;
+esac
+
+exit 0

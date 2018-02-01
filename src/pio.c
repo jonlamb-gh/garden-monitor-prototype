@@ -79,17 +79,17 @@ int pio_init(
     // set names
     (void) strncpy(
             pio->sensors[PIO_SENSOR_1143].sensor_info,
-            "1143 W",
+            "1143 WR_L ",
             sizeof(pio->sensors[PIO_SENSOR_1143].sensor_info));
 
     (void) strncpy(
             pio->sensors[PIO_SENSOR_1127].sensor_info,
-            "1127 P",
+            "1127 P_L     ",
             sizeof(pio->sensors[PIO_SENSOR_1127].sensor_info));
 
     (void) strncpy(
             pio->sensors[PIO_SENSOR_1125_HUMID].sensor_info,
-            "1125_HUMID",
+            "1125_HUM ",
             sizeof(pio->sensors[PIO_SENSOR_1125_HUMID].sensor_info));
 
     (void) strncpy(

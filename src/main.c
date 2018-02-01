@@ -9,6 +9,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <popt.h>
@@ -21,6 +22,9 @@
 #include "gui_defs.h"
 #include "gui.h"
 
+#define TIMER_EVENT_DATA_POLL (0x01)
+#define TIMER_EVENT_GUI_REDRAW (0x02)
+
 enum option_e
 {
     OPTION_VERBOSE = 1,
@@ -32,7 +36,8 @@ static volatile sig_atomic_t global_exit_signal;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-static void sig_handler(int sig)
+static void sig_handler(
+        int sig)
 {
     if(sig == SIGINT)
     {
@@ -40,7 +45,9 @@ static void sig_handler(int sig)
     }
 }
 
-static void timer_callback(union sigval data)
+static void timer_broadcast(
+        const uint32_t event_flags,
+        volatile uint32_t * const events)
 {
     int status;
 
@@ -48,6 +55,8 @@ static void timer_callback(union sigval data)
 
     if(status == 0)
     {
+        *events |= event_flags;
+
         status = pthread_cond_signal(&cond);
     }
 
@@ -62,20 +71,49 @@ static void timer_callback(union sigval data)
     }
 }
 
-int main(int argc, char **argv)
+static void data_poll_timer_callback(
+        union sigval data)
+{
+    if(data.sival_ptr != NULL)
+    {
+        timer_broadcast(
+                TIMER_EVENT_DATA_POLL,
+                (volatile uint32_t*) data.sival_ptr);
+    }
+}
+
+static void gui_redraw_timer_callback(
+        union sigval data)
+{
+    if(data.sival_ptr != NULL)
+    {
+        timer_broadcast(
+                TIMER_EVENT_GUI_REDRAW,
+                (volatile uint32_t*) data.sival_ptr);
+    }
+}
+
+
+int main(
+        int argc,
+        char **argv)
 {
     int ret = 0;
     int verbose = 0;
     long serial_number = 0;
     char *zlog_cat_name = NULL;
     int zlog_enabled = 0;
+    volatile uint32_t timer_signal_events = 0;
     struct sigaction sigact;
     poptContext opt_ctx;
     pio_s pio;
     pio_ring_s pio_ring;
     atimer_s data_poll_timer;
+    atimer_s gui_redraw_timer;
+    pio_measurement_s measurement;
     gui_s gui;
     struct itimerspec data_poll_timer_spec;
+    struct itimerspec gui_redraw_timer_spec;
 
     const struct poptOption OPTIONS_TABLE[] =
     {
@@ -206,15 +244,23 @@ int main(int argc, char **argv)
     if(ret == 0)
     {
         ret = atimer_create(
-                timer_callback,
-                NULL,
+                data_poll_timer_callback,
+                (void*) &timer_signal_events,
                 &data_poll_timer);
     }
 
     if(ret == 0)
     {
+        ret = atimer_create(
+                gui_redraw_timer_callback,
+                (void*) &timer_signal_events,
+                &gui_redraw_timer);
+    }
+
+    if(ret == 0)
+    {
         atimer_timespec_set_ms(
-                DEF_DATA_POLL_START_DELAY_MS,
+                DEF_TIMER_START_DELAY_MS,
                 &data_poll_timer_spec.it_value);
     }
 
@@ -223,6 +269,20 @@ int main(int argc, char **argv)
         atimer_timespec_set_ms(
                 DEF_DATA_POLL_INTERVAL_MS,
                 &data_poll_timer_spec.it_interval);
+    }
+
+    if(ret == 0)
+    {
+        atimer_timespec_set_ms(
+                DEF_TIMER_START_DELAY_MS,
+                &gui_redraw_timer_spec.it_value);
+    }
+
+    if(ret == 0)
+    {
+        atimer_timespec_set_ms(
+                DEF_GUI_REDRAW_INTERVAL_MS,
+                &gui_redraw_timer_spec.it_interval);
     }
 
     (void) memset(&gui, 0, sizeof(gui));
@@ -245,6 +305,13 @@ int main(int argc, char **argv)
                 &data_poll_timer);
     }
 
+    if(ret == 0)
+    {
+        ret = atimer_set(
+                &gui_redraw_timer_spec,
+                &gui_redraw_timer);
+    }
+
     // don't start if we've encountered an error
     if(ret != 0)
     {
@@ -253,37 +320,56 @@ int main(int argc, char **argv)
 
     while((global_exit_signal == 0) && (ret == 0))
     {
-        pio_measurement_s measurement;
+        int poll_for_data = 0;
+        int redraw_gui = 0;
 
         ret = pthread_mutex_lock(&mutex);
 
         if(ret == 0)
         {
             ret = pthread_cond_wait(&cond, &mutex);
+
+            if((timer_signal_events & TIMER_EVENT_DATA_POLL) != 0)
+            {
+                timer_signal_events &= ~TIMER_EVENT_DATA_POLL;
+                poll_for_data = 1;
+            }
+
+            if((timer_signal_events & TIMER_EVENT_GUI_REDRAW) != 0)
+            {
+                timer_signal_events &= ~TIMER_EVENT_GUI_REDRAW;
+                redraw_gui = 1;
+            }
+
             ret |= pthread_mutex_unlock(&mutex);
         }
 
-        if(ret == 0)
+        if((poll_for_data != 0) && (ret == 0))
         {
             ret = pio_poll(&pio, &measurement);
+
+            if(ret == 0)
+            {
+                ret = pio_ring_put(&measurement, &pio_ring);
+            }
         }
 
-        if(ret == 0)
-        {
-            ret = pio_ring_put(&measurement, &pio_ring);
-        }
-
-        if((zlog_enabled != 0) && (ret == 0))
+        if((poll_for_data != 0) && (zlog_enabled != 0) && (ret == 0))
         {
             dzlog_info(
-                    "%f, %f, %f, %f",
+                    "%lu.%lu,%f,%f,%f,%f",
+                    (unsigned long) measurement.timestamp.tv_sec,
+                    (unsigned long) measurement.timestamp.tv_nsec,
                     measurement.values[0],
                     measurement.values[1],
                     measurement.values[2],
                     measurement.values[3]);
         }
 
-        gui_render(&pio, &pio_ring, &gui);
+        if(redraw_gui != 0)
+        {
+            gui_render(&pio, &pio_ring, &gui);
+        }
     }
 
     gui_fini(&gui);
