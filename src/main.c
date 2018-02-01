@@ -9,6 +9,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <errno.h>
 #include <stdint.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -93,6 +94,26 @@ static void gui_redraw_timer_callback(
     }
 }
 
+static void drop_root_privileges(void)
+{
+    if(getuid() == 0)
+    {
+        printf("dropping root privileges\n");
+
+        if(setgid(getgid()) != 0)
+        {
+            (void) fprintf(stderr, "failed to drop privileges: %s\n", strerror(errno));
+            exit(-1);
+        }
+
+        if(setuid(getuid()) != 0)
+        {
+            (void) fprintf(stderr, "failed to drop privileges: %s\n", strerror(errno));
+            exit(-1);
+        }
+    }
+}
+
 
 int main(
         int argc,
@@ -147,6 +168,8 @@ int main(
         POPT_AUTOHELP
         POPT_TABLEEND
     };
+
+    drop_root_privileges();
 
     opt_ctx = poptGetContext(
             NULL,
