@@ -20,6 +20,31 @@
 #include "font.h"
 #include "measurement_plot.h"
 
+static void update_time(
+        mp_time_s * const mp_time)
+{
+   (void) clock_gettime(
+            CLOCK_REALTIME,
+            &mp_time->timestamp);
+
+    (void) time(&mp_time->time_sec);
+
+    (void) localtime_r(
+            &mp_time->time_sec,
+            &mp_time->local_time);
+
+    (void) asctime_r(
+            &mp_time->local_time,
+            mp_time->date_string);
+
+    // remove '\n' character if one exist
+    char * const nl = strchr(mp_time->date_string, (int) '\n');
+     if(nl != NULL)
+     {
+         *nl = '\0';
+    }
+}
+
 static void render_coord(
         const VGfloat x,
         const VGfloat y,
@@ -143,6 +168,22 @@ static void render_sensor_axis(
     }
 }
 
+static void render_legend_calendar(
+        const mp_legend_s * const legend)
+{
+    Stroke(0, 0, 0, 1.0f);
+    StrokeWidth(0.0f);
+
+    Fill(legend->digit_rgb[0], legend->digit_rgb[1], legend->digit_rgb[2], 1.0f);
+
+    Text(
+            legend->tx,
+            legend->ty - legend->time_y_offset,
+            legend->time.date_string,
+            *((Fontinfo*) legend->font),
+            (int) DEF_FONT_POINT_SIZE);
+}
+
 void measurement_plot_apply_default_config(
         measurement_plot_s * const plot)
 {
@@ -201,6 +242,10 @@ void measurement_plot_apply_default_config(
                 ((VGfloat) idx) * (plot->legend.font_height + (plot->legend.font_height / 6.0f));
     }
 
+    plot->legend.time_y_offset =
+            ((VGfloat) PIO_SENSOR_KIND_COUNT)
+            * (plot->legend.font_height + (plot->legend.font_height / 5.0f));
+
     for(idx = 0; idx < PIO_SENSOR_KIND_COUNT; idx += 1)
     {
         plot->axes[idx].font = font_get(FONT_SARIF_TYPE_FACE);
@@ -235,6 +280,8 @@ void measurement_plot_render_pio_ring(
     unsigned long s_idx;
     unsigned long r_idx;
 
+    update_time(&plot->legend.time);
+
     render_grid(&plot->grid);
 
     for(r_idx = ring->tail; r_idx != ring->head; r_idx = (r_idx + 1) % ring->length)
@@ -267,4 +314,6 @@ void measurement_plot_render_pio_ring(
                 &plot->viewports[s_idx],
                 &plot->axes[s_idx]);
     }
+
+    render_legend_calendar(&plot->legend);
 }

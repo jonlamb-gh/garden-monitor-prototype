@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <time.h>
 #include <phidget22.h>
 
 #include "default_config.h"
@@ -190,7 +191,7 @@ int pio_init(
         p_ret = Phidget_getDeviceSerialNumber(
                 (PhidgetHandle) pio->sensors[0].h_vin,
                 &dev_sn);
-        
+
         if(p_ret != EPHIDGET_OK)
         {
             ret = p_err("Phidget_getDeviceSerialNumber", p_ret);
@@ -258,15 +259,15 @@ int pio_init(
 
     for(idx = 0; idx < PIO_SENSOR_KIND_COUNT; idx += 1)
     {
-        (void) fprintf(                            
-                stdout,                            
-                "[%lu]\n  unit: 0x%lX\n  name: '%s'\n  symbol: '%s'\n",                            
+        (void) fprintf(
+                stdout,
+                "[%lu]\n  unit: 0x%lX\n  name: '%s'\n  symbol: '%s'\n",
                 idx,
                 (unsigned long) pio->sensors[idx].unit_info.unit,
                 pio->sensors[idx].unit_info.name,
                 pio->sensors[idx].unit_info.symbol);
     }
-    
+
     // TODO - get rid of this after testing
     (void) fflush(stdout);
     (void) fflush(stderr);
@@ -337,6 +338,19 @@ int pio_poll(
                 p_ret,
                 pio->sensors[idx].h_vin,
                 &measurement->values[v_idx]);
+
+        // the 1127 seems to go below their APIs threshold
+        if(ret != 0)
+        {
+            if(p_ret == EPHIDGET_UNKNOWNVAL)
+            {
+                if(idx == PIO_SENSOR_1127)
+                {
+                    ret = 0;
+                    p_ret = EPHIDGET_OK;
+                }
+            }
+        }
     }
 
     for(idx = PIO_SENSOR_1125_HUMID; idx <= PIO_SENSOR_1125_TEMP; idx += 1, v_idx += 1)

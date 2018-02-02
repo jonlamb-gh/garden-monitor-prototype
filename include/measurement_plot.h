@@ -7,11 +7,20 @@
 #ifndef MEASUREMENT_PLOT_H
 #define MEASUREMENT_PLOT_H
 
+#include <time.h>
 #include <VG/openvg.h>
 
 #include "pio_defs.h"
 #include "pio_ring.h"
 #include "pio.h"
+
+typedef struct
+{
+    struct timespec timestamp;
+    time_t time_sec;
+    struct tm local_time;
+    char date_string[256];
+} mp_time_s;
 
 typedef struct
 {
@@ -37,6 +46,8 @@ typedef struct
     VGfloat ty;
     void *font;
     VGfloat font_height;
+    mp_time_s time;
+    VGfloat time_y_offset;
     VGfloat sensor_offsets[PIO_SENSOR_KIND_COUNT];
     unsigned int digit_rgb[3];
     char string[256];
