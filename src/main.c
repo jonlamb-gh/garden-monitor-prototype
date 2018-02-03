@@ -31,7 +31,9 @@ enum option_e
     OPTION_VERBOSE = 1,
     OPTION_SERIAL_NUMBER,
     OPTION_CSV_LOG,
-    OPTION_SCREEN_SHOT_FILE
+    OPTION_SCREEN_SHOT_FILE,
+    OPTION_DATA_POLL_INTERVAL,
+    OPTION_GUI_REDRAW_INTERVAL
 };
 
 static volatile sig_atomic_t global_exit_signal;
@@ -121,11 +123,13 @@ int main(
         char **argv)
 {
     int ret = 0;
-    int verbose = 0;
-    long serial_number = 0;
-    char *zlog_cat_name = NULL;
-    char *screen_shot_file = NULL;
-    int zlog_enabled = 0;
+    int opt_verbose = 0;
+    long opt_serial_number = 0;
+    long opt_data_poll_intvl = (long) DEF_DATA_POLL_INTERVAL_MS;
+    long opt_gui_redraw_intvl = (long) DEF_GUI_REDRAW_INTERVAL_MS;
+    char *opt_zlog_cat_name = NULL;
+    char *opt_screen_shot_file = NULL;
+    int opt_zlog_enabled = 0;
     volatile uint32_t timer_signal_events = 0;
     struct sigaction sigact;
     poptContext opt_ctx;
@@ -153,7 +157,7 @@ int main(
             "serial-number",
             's',
             POPT_ARG_LONG,
-            &serial_number,
+            &opt_serial_number,
             OPTION_SERIAL_NUMBER,
             "serial number of device to open",
             "'Phidget serial number (0 means any)'"
@@ -162,7 +166,7 @@ int main(
             "log",
             'o',
             POPT_ARG_STRING | POPT_ARGFLAG_OPTIONAL,
-            &zlog_cat_name,
+            &opt_zlog_cat_name,
             OPTION_CSV_LOG,
             "enable zlog CSV category logging",
             "'category name' default is 'gm'"
@@ -171,10 +175,28 @@ int main(
             "screen-shot",
             'r',
             POPT_ARG_STRING,
-            &screen_shot_file,
+            &opt_screen_shot_file,
             OPTION_SCREEN_SHOT_FILE,
             "on exit, write the current frame buffer to file (raw RGBA 32)",
             "'file path'"
+        },
+        {
+            "data-poll-interval",
+            'd',
+            POPT_ARG_LONG,
+            &opt_data_poll_intvl,
+            OPTION_DATA_POLL_INTERVAL,
+            "data poll interval",
+            "1-N <milliseconds>, default = 500"
+        },
+        {
+            "gui-redraw-interval",
+            'g',
+            POPT_ARG_LONG,
+            &opt_gui_redraw_intvl,
+            OPTION_GUI_REDRAW_INTERVAL,
+            "GUI redraw interval",
+            "1-N <milliseconds>, default = 4,000"
         },
         POPT_AUTOHELP
         POPT_TABLEEND
@@ -194,11 +216,11 @@ int main(
     {
         if(opt_ret == OPTION_VERBOSE)
         {
-            verbose = 1;
+            opt_verbose = 1;
         }
         else if(opt_ret == OPTION_SERIAL_NUMBER)
         {
-            if(serial_number <= 0)
+            if(opt_serial_number <= 0)
             {
                 (void) fprintf(
                         stderr,
@@ -210,7 +232,31 @@ int main(
         }
         else if(opt_ret == OPTION_CSV_LOG)
         {
-            zlog_enabled = 1;
+            opt_zlog_enabled = 1;
+        }
+        else if(opt_ret == OPTION_DATA_POLL_INTERVAL)
+        {
+            if(opt_data_poll_intvl <= 0)
+            {
+                (void) fprintf(
+                        stderr,
+                        "data poll interval must be greater than zero\n");
+                poptPrintUsage(opt_ctx, stderr, 0);
+                poptFreeContext(opt_ctx);
+                exit(EXIT_FAILURE);
+            }
+        }
+        else if(opt_ret == OPTION_GUI_REDRAW_INTERVAL)
+        {
+            if(opt_gui_redraw_intvl <= 0)
+            {
+                (void) fprintf(
+                        stderr,
+                        "GUI redraw interval must be greater than zero\n");
+                poptPrintUsage(opt_ctx, stderr, 0);
+                poptFreeContext(opt_ctx);
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
@@ -241,12 +287,12 @@ int main(
 
     (void) memset(&pio, 0, sizeof(pio));
 
-    if((zlog_enabled != 0) && (ret == 0))
+    if((opt_zlog_enabled != 0) && (ret == 0))
     {
         const char * const category =
-                (zlog_cat_name != NULL) ? zlog_cat_name : "gm";
+                (opt_zlog_cat_name != NULL) ? opt_zlog_cat_name : "gm";
 
-        if(verbose != 0)
+        if(opt_verbose != 0)
         {
             (void) fprintf(
                     stdout,
@@ -263,7 +309,31 @@ int main(
 
     if(ret == 0)
     {
-        ret = pio_init(serial_number, &pio);
+        ret = pio_init(opt_serial_number, &pio);
+    }
+
+    if((opt_verbose != 0) && (ret == 0))
+    {
+        (void) fprintf(
+                stdout,
+                "found device with serial number '%lu'\n",
+                pio.serial_number);
+
+        unsigned long idx;
+        for(idx = 0; idx < PIO_SENSOR_KIND_COUNT; idx += 1)
+        {
+            (void) fprintf(
+                    stdout,
+                    "[%lu]\n  sensor: '%s'\n  unit: 0x%lX\n  name: '%s'\n  symbol: '%s'\n",
+                    idx,
+                    pio.sensors[idx].sensor_info,
+                    (unsigned long) pio.sensors[idx].unit_info.unit,
+                    pio.sensors[idx].unit_info.name,
+                    pio.sensors[idx].unit_info.symbol);
+        }
+
+        (void) fflush(stdout);
+        (void) fflush(stderr);
     }
 
     (void) memset(&pio_ring, 0, sizeof(pio_ring));
@@ -301,7 +371,7 @@ int main(
     if(ret == 0)
     {
         atimer_timespec_set_ms(
-                DEF_DATA_POLL_INTERVAL_MS,
+                (unsigned long) opt_data_poll_intvl,
                 &data_poll_timer_spec.it_interval);
     }
 
@@ -315,7 +385,7 @@ int main(
     if(ret == 0)
     {
         atimer_timespec_set_ms(
-                DEF_GUI_REDRAW_INTERVAL_MS,
+                (unsigned long) opt_gui_redraw_intvl,
                 &gui_redraw_timer_spec.it_interval);
     }
 
@@ -329,6 +399,15 @@ int main(
                 DEF_SCREEN_WIDTH,
                 DEF_SCREEN_HEIGHT,
                 &gui);
+    }
+
+    if((opt_verbose != 0) && (ret == 0))
+    {
+        (void) fprintf(
+                stdout,
+                "gui screen size = (%lu, %lu)\n",
+                gui.window.width,
+                gui.window.height);
     }
 
     // enable timers
@@ -388,7 +467,7 @@ int main(
             }
         }
 
-        if((poll_for_data != 0) && (zlog_enabled != 0) && (ret == 0))
+        if((poll_for_data != 0) && (opt_zlog_enabled != 0) && (ret == 0))
         {
             dzlog_info(
                     "%lu.%lu,%f,%f,%f,%f",
@@ -406,23 +485,23 @@ int main(
         }
     }
 
-    gui_fini(screen_shot_file, &gui);
+    gui_fini(opt_screen_shot_file, &gui);
 
     pio_fini(&pio);
 
-    if(zlog_enabled != 0)
+    if(opt_zlog_enabled != 0)
     {
         zlog_fini();
     }
 
-    if(zlog_cat_name != NULL)
+    if(opt_zlog_cat_name != NULL)
     {
-        free(zlog_cat_name);
+        free(opt_zlog_cat_name);
     }
 
-    if(screen_shot_file != NULL)
+    if(opt_screen_shot_file != NULL)
     {
-        free(screen_shot_file);
+        free(opt_screen_shot_file);
     }
 
     if(ret == 0)

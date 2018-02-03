@@ -66,12 +66,6 @@ int gui_init(
     // init after OpenVG init, so we can get the font heights
     measurement_plot_apply_default_config(&gui->mplot);
 
-    (void) fprintf(
-            stdout,
-            "gui screen size = (%lu, %lu)\n",
-            gui->window.width,
-            gui->window.height);
-
     Start((int) width, (int) height);
 
     return 0;

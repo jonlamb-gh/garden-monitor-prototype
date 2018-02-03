@@ -199,11 +199,6 @@ int pio_init(
         else
         {
             pio->serial_number = (unsigned long) dev_sn;
-
-            (void) fprintf(
-                    stdout,
-                    "found device with serial number '%ld'\n",
-                    (long) dev_sn);
         }
     }
 
@@ -256,21 +251,6 @@ int pio_init(
                 pio->sensors[idx].h_vrin,
                 &pio->sensors[idx].unit_info);
     }
-
-    for(idx = 0; idx < PIO_SENSOR_KIND_COUNT; idx += 1)
-    {
-        (void) fprintf(
-                stdout,
-                "[%lu]\n  unit: 0x%lX\n  name: '%s'\n  symbol: '%s'\n",
-                idx,
-                (unsigned long) pio->sensors[idx].unit_info.unit,
-                pio->sensors[idx].unit_info.name,
-                pio->sensors[idx].unit_info.symbol);
-    }
-
-    // TODO - get rid of this after testing
-    (void) fflush(stdout);
-    (void) fflush(stderr);
 
     return ret;
 }
