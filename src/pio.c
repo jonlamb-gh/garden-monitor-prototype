@@ -348,6 +348,7 @@ int pio_poll(
                 {
                     ret = 0;
                     p_ret = EPHIDGET_OK;
+                    measurement->values[v_idx] = PIO_MEASUREMENT_VALUE_INVALID;
                 }
             }
         }

@@ -291,9 +291,13 @@ void measurement_plot_render_pio_ring(
 
         for(s_idx = 0; s_idx < PIO_SENSOR_KIND_COUNT; s_idx += 1)
         {
+            // convert invalid values to zero
+            const VGfloat m_value =
+                    (m->values[s_idx] != PIO_MEASUREMENT_VALUE_INVALID) ? m->values[s_idx] : 0.0f;
+
             render_measurement(
                     x_index,
-                    (VGfloat) m->values[s_idx],
+                    m_value,
                     &plot->viewports[s_idx]);
         }
 
