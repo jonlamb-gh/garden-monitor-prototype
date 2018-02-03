@@ -11,6 +11,7 @@ Dependencies:
 
 # Hardware
 
+- MIMO 7S USB touch screen display (800 x 480)
 - Phidgets Interface Kit 8/8/8
 - Phidgets 1143 - wide range light sensor
 - Phidgets 1127 - precision light sensor
@@ -26,6 +27,8 @@ Usage: garden-monitor [OPTION...]
   -r, --screen-shot='file path'                                     on exit, write the current frame buffer to file (raw RGBA 32)
   -d, --data-poll-interval=1-N <milliseconds>, default = 500        data poll interval
   -g, --gui-redraw-interval=1-N <milliseconds>, default = 4,000     GUI redraw interval
+  -w, --width=1-N <pixels>, default = 800                           GUI width
+  -h, --height=1-N <pixels>, default = 480                          GUI height
 
 Help options:
   -?, --help                                                        Show this help message

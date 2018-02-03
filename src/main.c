@@ -33,7 +33,9 @@ enum option_e
     OPTION_CSV_LOG,
     OPTION_SCREEN_SHOT_FILE,
     OPTION_DATA_POLL_INTERVAL,
-    OPTION_GUI_REDRAW_INTERVAL
+    OPTION_GUI_REDRAW_INTERVAL,
+    OPTION_GUI_WIDTH,
+    OPTION_GUI_HEIGHT
 };
 
 static volatile sig_atomic_t global_exit_signal;
@@ -117,6 +119,13 @@ static void drop_root_privileges(void)
     }
 }
 
+static void opt_exit(
+        poptContext opt_ctx)
+{
+    poptPrintUsage(opt_ctx, stderr, 0);
+    poptFreeContext(opt_ctx);
+    exit(EXIT_FAILURE);
+}
 
 int main(
         int argc,
@@ -127,6 +136,8 @@ int main(
     long opt_serial_number = 0;
     long opt_data_poll_intvl = (long) DEF_DATA_POLL_INTERVAL_MS;
     long opt_gui_redraw_intvl = (long) DEF_GUI_REDRAW_INTERVAL_MS;
+    long opt_gui_width = (long) DEF_SCREEN_WIDTH;
+    long opt_gui_height = (long) DEF_SCREEN_HEIGHT;
     char *opt_zlog_cat_name = NULL;
     char *opt_screen_shot_file = NULL;
     int opt_zlog_enabled = 0;
@@ -198,6 +209,24 @@ int main(
             "GUI redraw interval",
             "1-N <milliseconds>, default = 4,000"
         },
+        {
+            "width",
+            'w',
+            POPT_ARG_LONG,
+            &opt_gui_width,
+            OPTION_GUI_WIDTH,
+            "GUI width",
+            "1-N <pixels>, default = 800"
+        },
+        {
+            "height",
+            'h',
+            POPT_ARG_LONG,
+            &opt_gui_height,
+            OPTION_GUI_HEIGHT,
+            "GUI height",
+            "1-N <pixels>, default = 480"
+        },
         POPT_AUTOHELP
         POPT_TABLEEND
     };
@@ -225,9 +254,7 @@ int main(
                 (void) fprintf(
                         stderr,
                         "serial number must be greater than zero\n");
-                poptPrintUsage(opt_ctx, stderr, 0);
-                poptFreeContext(opt_ctx);
-                exit(EXIT_FAILURE);
+                opt_exit(opt_ctx);
             }
         }
         else if(opt_ret == OPTION_CSV_LOG)
@@ -241,9 +268,7 @@ int main(
                 (void) fprintf(
                         stderr,
                         "data poll interval must be greater than zero\n");
-                poptPrintUsage(opt_ctx, stderr, 0);
-                poptFreeContext(opt_ctx);
-                exit(EXIT_FAILURE);
+                opt_exit(opt_ctx);
             }
         }
         else if(opt_ret == OPTION_GUI_REDRAW_INTERVAL)
@@ -253,9 +278,27 @@ int main(
                 (void) fprintf(
                         stderr,
                         "GUI redraw interval must be greater than zero\n");
-                poptPrintUsage(opt_ctx, stderr, 0);
-                poptFreeContext(opt_ctx);
-                exit(EXIT_FAILURE);
+                opt_exit(opt_ctx);
+            }
+        }
+        else if(opt_ret == OPTION_GUI_WIDTH)
+        {
+            if(opt_gui_width <= 0)
+            {
+                (void) fprintf(
+                        stderr,
+                        "GUI width must be greater than zero\n");
+                opt_exit(opt_ctx);
+            }
+        }
+        else if(opt_ret == OPTION_GUI_HEIGHT)
+        {
+            if(opt_gui_height <= 0)
+            {
+                (void) fprintf(
+                        stderr,
+                        "GUI height must be greater than zero\n");
+                opt_exit(opt_ctx);
             }
         }
     }
@@ -396,8 +439,8 @@ int main(
         ret = gui_init(
                 0,
                 0,
-                DEF_SCREEN_WIDTH,
-                DEF_SCREEN_HEIGHT,
+                (unsigned long) opt_gui_width,
+                (unsigned long) opt_gui_height,
                 &gui);
     }
 
