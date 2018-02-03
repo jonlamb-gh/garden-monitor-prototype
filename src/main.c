@@ -29,8 +29,9 @@
 enum option_e
 {
     OPTION_VERBOSE = 1,
-    OPTION_SERIAL_NUMBER = 2,
-    OPTION_CSV_LOG = 3
+    OPTION_SERIAL_NUMBER,
+    OPTION_CSV_LOG,
+    OPTION_SCREEN_SHOT_FILE
 };
 
 static volatile sig_atomic_t global_exit_signal;
@@ -123,6 +124,7 @@ int main(
     int verbose = 0;
     long serial_number = 0;
     char *zlog_cat_name = NULL;
+    char *screen_shot_file = NULL;
     int zlog_enabled = 0;
     volatile uint32_t timer_signal_events = 0;
     struct sigaction sigact;
@@ -164,6 +166,15 @@ int main(
             OPTION_CSV_LOG,
             "enable zlog CSV category logging",
             "'category name' default is 'gm'"
+        },
+        {
+            "screen-shot",
+            'r',
+            POPT_ARG_STRING,
+            &screen_shot_file,
+            OPTION_SCREEN_SHOT_FILE,
+            "on exit, write the current frame buffer to file (raw RGBA 32)",
+            "'file path'"
         },
         POPT_AUTOHELP
         POPT_TABLEEND
@@ -395,7 +406,7 @@ int main(
         }
     }
 
-    gui_fini(&gui);
+    gui_fini(screen_shot_file, &gui);
 
     pio_fini(&pio);
 
@@ -407,6 +418,11 @@ int main(
     if(zlog_cat_name != NULL)
     {
         free(zlog_cat_name);
+    }
+
+    if(screen_shot_file != NULL)
+    {
+        free(screen_shot_file);
     }
 
     if(ret == 0)

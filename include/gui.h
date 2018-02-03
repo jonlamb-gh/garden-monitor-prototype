@@ -19,6 +19,7 @@ int gui_init(
         gui_s * const gui);
 
 void gui_fini(
+        const char * const screen_shot_file,
         gui_s * const gui);
 
 void gui_render(

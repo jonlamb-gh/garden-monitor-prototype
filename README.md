@@ -9,6 +9,13 @@ Dependencies:
 - [zlog (fork)](https://github.com/jonlamb-gh/zlog)
 - [libphidget](https://www.phidgets.com/docs/Language_-_C#Quick_Downloads)
 
+# Hardware
+
+- Phidgets Interface Kit 8/8/8
+- Phidgets 1143
+- Phidgets 1127
+- Phidgets 1125 H/T
+
 # GUI
 
 ![screen-image.png](images/screen-image.png)

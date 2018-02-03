@@ -78,9 +78,15 @@ int gui_init(
 }
 
 void gui_fini(
+        const char * const screen_shot_file,
         gui_s * const gui)
 {
     (void) gui;
+
+    if(screen_shot_file != NULL)
+    {
+        SaveEnd(screen_shot_file);
+    }
 
     finish();
 }
