@@ -18,6 +18,7 @@
 
 #include "default_config.h"
 #include "atimer.h"
+#include "events.h"
 #include "pio.h"
 #include "pio_ring.h"
 #include "gui_defs.h"
@@ -51,7 +52,7 @@ static void sig_handler(
     }
 }
 
-static void timer_broadcast(
+static void broadcast_events(
         const uint32_t event_flags,
         volatile uint32_t * const events)
 {
@@ -82,9 +83,9 @@ static void data_poll_timer_callback(
 {
     if(data.sival_ptr != NULL)
     {
-        timer_broadcast(
-                TIMER_EVENT_DATA_POLL,
-                (volatile uint32_t*) data.sival_ptr);
+        events_broadcast(
+                EVENTS_DATA_POLL,
+                (events_context_s*) data.sival_ptr);
     }
 }
 
@@ -93,9 +94,9 @@ static void gui_redraw_timer_callback(
 {
     if(data.sival_ptr != NULL)
     {
-        timer_broadcast(
-                TIMER_EVENT_GUI_REDRAW,
-                (volatile uint32_t*) data.sival_ptr);
+        events_broadcast(
+                EVENTS_GUI_REDRAW,
+                (events_context_s*) data.sival_ptr);
     }
 }
 
@@ -141,9 +142,9 @@ int main(
     char *opt_zlog_cat_name = NULL;
     char *opt_screen_shot_file = NULL;
     int opt_zlog_enabled = 0;
-    volatile uint32_t timer_signal_events = 0;
     struct sigaction sigact;
     poptContext opt_ctx;
+    events_context_s events_ctx;
     pio_s pio;
     pio_ring_s pio_ring;
     atimer_s data_poll_timer;
@@ -328,8 +329,6 @@ int main(
         ret = sigaction(SIGINT, &sigact, 0);
     }
 
-    (void) memset(&pio, 0, sizeof(pio));
-
     if((opt_zlog_enabled != 0) && (ret == 0))
     {
         const char * const category =
@@ -349,6 +348,15 @@ int main(
             (void) fprintf(stderr, "failed to open '%s'\n", DEF_ZLOG_CONF_FILE);
         }
     }
+
+    (void) memset(&events_ctx, 0, sizeof(events_ctx));
+
+    if(ret == 0)
+    {
+        events_init(&broadcast_events, &events_ctx);
+    }
+
+    (void) memset(&pio, 0, sizeof(pio));
 
     if(ret == 0)
     {
@@ -392,7 +400,7 @@ int main(
     {
         ret = atimer_create(
                 data_poll_timer_callback,
-                (void*) &timer_signal_events,
+                (void*) &events_ctx,
                 &data_poll_timer);
     }
 
@@ -400,7 +408,7 @@ int main(
     {
         ret = atimer_create(
                 gui_redraw_timer_callback,
-                (void*) &timer_signal_events,
+                (void*) &events_ctx,
                 &gui_redraw_timer);
     }
 
@@ -476,8 +484,7 @@ int main(
 
     while((global_exit_signal == 0) && (ret == 0))
     {
-        int poll_for_data = 0;
-        int redraw_gui = 0;
+        uint32_t events = EVENTS_NONE;
 
         ret = pthread_mutex_lock(&mutex);
 
@@ -485,22 +492,12 @@ int main(
         {
             ret = pthread_cond_wait(&cond, &mutex);
 
-            if((timer_signal_events & TIMER_EVENT_DATA_POLL) != 0)
-            {
-                timer_signal_events &= ~TIMER_EVENT_DATA_POLL;
-                poll_for_data = 1;
-            }
-
-            if((timer_signal_events & TIMER_EVENT_GUI_REDRAW) != 0)
-            {
-                timer_signal_events &= ~TIMER_EVENT_GUI_REDRAW;
-                redraw_gui = 1;
-            }
+            events = events_get_and_clear(&events_ctx);
 
             ret |= pthread_mutex_unlock(&mutex);
         }
 
-        if((poll_for_data != 0) && (ret == 0))
+        if(((events & EVENTS_DATA_POLL) != 0) && (ret == 0))
         {
             ret = pio_poll(&pio, &measurement);
 
@@ -510,7 +507,7 @@ int main(
             }
         }
 
-        if((poll_for_data != 0) && (opt_zlog_enabled != 0) && (ret == 0))
+        if(((events & EVENTS_DATA_POLL) != 0) && (opt_zlog_enabled != 0) && (ret == 0))
         {
             dzlog_info(
                     "%lu.%lu,%f,%f,%f,%f",
@@ -522,7 +519,7 @@ int main(
                     measurement.values[3]);
         }
 
-        if(redraw_gui != 0)
+        if((events & EVENTS_GUI_REDRAW) != 0)
         {
             gui_render(&pio, &pio_ring, &gui);
         }
