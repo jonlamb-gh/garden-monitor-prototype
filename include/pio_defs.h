@@ -10,7 +10,7 @@
 #include <time.h>
 #include <phidget22.h>
 
-#define PIO_MEASUREMENT_VALUE_INVALID (-9999.0)
+#define PIO_MEASUREMENT_VALUE_INVALID (0.0)
 
 enum pio_sensor_e
 {
