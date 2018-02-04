@@ -52,7 +52,7 @@ static void render_coord(
 {
     Stroke(0, 0, 0, 1.0f);
 
-	Circle(x, y, size);
+    Circle(x, y, size);
 }
 
 static void render_measurement(
