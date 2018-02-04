@@ -42,7 +42,7 @@ static inline uint32_t events_get_and_clear(
 
     ctx->events &= ~m_events;
 
-    return (uint32_t) m_events;;
+    return (uint32_t) m_events;
 }
 
 static inline void events_broadcast(
