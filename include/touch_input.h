@@ -51,7 +51,7 @@ void touch_input_fini(
 
 int touch_get_last_pos(
         touch_input_s * const touch,
-        unsigned long * const tx,
-        unsigned long * const ty);
+        float * const tx,
+        float * const ty);
 
 #endif  /* TOUCH_INPUT_H */

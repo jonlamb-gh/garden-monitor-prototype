@@ -7,6 +7,7 @@
 #ifndef GUI_DEFS_H
 #define GUI_DEFS_H
 
+#include "gui_buttons.h"
 #include "measurement_plot.h"
 
 typedef struct
@@ -15,11 +16,12 @@ typedef struct
     unsigned long y;
     unsigned long width;
     unsigned long height;
-} window_s;
+} gui_window_s;
 
 typedef struct
 {
-    window_s window;
+    gui_window_s window;
+    gui_buttons_s buttons;
     unsigned int background_color_rgb[3];
     measurement_plot_s mplot;
 } gui_s;

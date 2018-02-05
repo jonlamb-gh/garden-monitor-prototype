@@ -257,17 +257,27 @@ void measurement_plot_apply_default_config(
     }
 
     plot->axes[PIO_SENSOR_1143].offset_tick_real = DEF_AXIS_OFFSET_TICK_1143;
-    plot->axes[PIO_SENSOR_1143].offset_tick =
-            DEF_AXIS_OFFSET_TICK_1143 * plot->viewports[PIO_SENSOR_1143].scale_y;
     plot->axes[PIO_SENSOR_1127].offset_tick_real = DEF_AXIS_OFFSET_TICK_1127;
-    plot->axes[PIO_SENSOR_1127].offset_tick =
-            DEF_AXIS_OFFSET_TICK_1127 * plot->viewports[PIO_SENSOR_1127].scale_y;
     plot->axes[PIO_SENSOR_1125_HUMID].offset_tick_real = DEF_AXIS_OFFSET_TICK_1125_HUMID;
-    plot->axes[PIO_SENSOR_1125_HUMID].offset_tick =
-            DEF_AXIS_OFFSET_TICK_1125_HUMID * plot->viewports[PIO_SENSOR_1125_HUMID].scale_y;
     plot->axes[PIO_SENSOR_1125_TEMP].offset_tick_real = DEF_AXIS_OFFSET_TICK_1125_TEMP;
+
+    measurement_plot_rescale(plot);
+}
+
+void measurement_plot_rescale(
+        measurement_plot_s * const plot)
+{
+    plot->axes[PIO_SENSOR_1143].offset_tick =
+            plot->axes[PIO_SENSOR_1143].offset_tick_real * plot->viewports[PIO_SENSOR_1143].scale_y;
+
+    plot->axes[PIO_SENSOR_1127].offset_tick =
+            plot->axes[PIO_SENSOR_1127].offset_tick_real * plot->viewports[PIO_SENSOR_1127].scale_y;
+
+    plot->axes[PIO_SENSOR_1125_HUMID].offset_tick =
+            plot->axes[PIO_SENSOR_1125_HUMID].offset_tick_real * plot->viewports[PIO_SENSOR_1125_HUMID].scale_y;
+
     plot->axes[PIO_SENSOR_1125_TEMP].offset_tick =
-            DEF_AXIS_OFFSET_TICK_1125_TEMP * plot->viewports[PIO_SENSOR_1125_TEMP].scale_y;
+            plot->axes[PIO_SENSOR_1125_TEMP].offset_tick_real * plot->viewports[PIO_SENSOR_1125_TEMP].scale_y;
 }
 
 void measurement_plot_render_pio_ring(

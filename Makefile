@@ -11,6 +11,7 @@ SRCS := \
 		src/pio_filter.c \
 		src/font.c \
 		src/measurement_plot.c \
+		src/gui_buttons.c \
 		src/gui.c \
 		src/touch_input.c \
 		src/main.c

@@ -535,8 +535,29 @@ int main(
                     measurement.values[3]);
         }
 
+        if((events & EVENTS_BTN_PRESS) != 0)
+        {
+            float tx;
+            float ty;
+
+            ret = touch_get_last_pos(
+                    &touch_input,
+                    &tx,
+                    &ty);
+
+            gui_buttons_handle_press(
+                    tx,
+                    ty,
+                    &gui.buttons);
+        }
+
+        if((events & EVENTS_BTN_RELEASE) != 0)
+        {   
+            gui_buttons_handle_release(&gui.buttons);
+        }
+
         const uint32_t redraw_events =
-                events & (EVENTS_GUI_REDRAW | EVENTS_BTN_RELEASE);
+                events & (EVENTS_GUI_REDRAW | EVENTS_BTN_PRESS | EVENTS_BTN_RELEASE);
 
         if(redraw_events != 0)
         {

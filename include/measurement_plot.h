@@ -74,6 +74,9 @@ typedef struct
 void measurement_plot_apply_default_config(
         measurement_plot_s * const plot);
 
+void measurement_plot_rescale(
+        measurement_plot_s * const plot);
+
 void measurement_plot_render_pio_ring(
         const pio_s * const pio,
         const pio_ring_s * const ring,

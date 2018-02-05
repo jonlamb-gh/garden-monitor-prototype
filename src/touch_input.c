@@ -221,8 +221,8 @@ void touch_input_fini(
 
 int touch_get_last_pos(
         touch_input_s * const touch,
-        unsigned long * const tx,
-        unsigned long * const ty)
+        float * const tx,
+        float * const ty)
 {
     int ret = 0;
 
@@ -245,8 +245,8 @@ int touch_get_last_pos(
 
             ret = pthread_mutex_unlock(&touch->pos.mutex);
 
-            *tx = (unsigned long) x_map;
-            *ty = (unsigned long) y_map;
+            *tx = x_map;
+            *ty = y_map;
         }
     }
 
