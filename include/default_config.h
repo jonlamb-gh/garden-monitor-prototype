@@ -9,6 +9,8 @@
 
 #define DEF_ZLOG_CONF_FILE "/etc/zlog/zlog.conf"
 
+#define DEF_TOUCH_INPUT_DEVICE "/dev/input/event0"
+
 #define DEF_AIN_CHANNEL_1143 (5)
 #define DEF_AIN_CHANNEL_1127 (4)
 #define DEF_AIN_CHANNEL_1125_HUMID (6)
@@ -20,6 +22,11 @@
 
 // 800 = ~6 hours at 30s intervals
 #define DEF_RING_BUFFER_LENGTH (800UL)
+
+#define DEF_TOUCH_SURFACE_X_MIN (700.0f)
+#define DEF_TOUCH_SURFACE_X_MAX (32000.0f)
+#define DEF_TOUCH_SURFACE_Y_MIN (1300.0f)
+#define DEF_TOUCH_SURFACE_Y_MAX (32000.0f)
 
 #define DEF_SCREEN_WIDTH (800UL)
 #define DEF_SCREEN_HEIGHT (480UL)

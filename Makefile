@@ -12,6 +12,7 @@ SRCS := \
 		src/font.c \
 		src/measurement_plot.c \
 		src/gui.c \
+		src/touch_input.c \
 		src/main.c
 
 OBJS := $(SRCS:.c=.o)

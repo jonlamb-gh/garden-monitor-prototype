@@ -23,6 +23,7 @@
 #include "pio_ring.h"
 #include "gui_defs.h"
 #include "gui.h"
+#include "touch_input.h"
 
 #define TIMER_EVENT_DATA_POLL (0x01)
 #define TIMER_EVENT_GUI_REDRAW (0x02)
@@ -151,6 +152,7 @@ int main(
     atimer_s gui_redraw_timer;
     pio_measurement_s measurement;
     gui_s gui;
+    touch_input_s touch_input;
     struct itimerspec data_poll_timer_spec;
     struct itimerspec gui_redraw_timer_spec;
 
@@ -356,6 +358,16 @@ int main(
         events_init(&broadcast_events, &events_ctx);
     }
 
+    (void) memset(&touch_input, 0, sizeof(touch_input));
+
+    if(ret == 0)
+    {
+        ret = touch_input_init(
+                DEF_TOUCH_INPUT_DEVICE,
+                &events_ctx,
+                &touch_input);
+    }
+
     (void) memset(&pio, 0, sizeof(pio));
 
     if(ret == 0)
@@ -480,6 +492,10 @@ int main(
     if(ret != 0)
     {
         global_exit_signal = 1;
+
+        (void) fprintf(
+                stderr,
+                "error detected during initialization\n");
     }
 
     while((global_exit_signal == 0) && (ret == 0))
@@ -519,7 +535,10 @@ int main(
                     measurement.values[3]);
         }
 
-        if((events & EVENTS_GUI_REDRAW) != 0)
+        const uint32_t redraw_events =
+                events & (EVENTS_GUI_REDRAW | EVENTS_BTN_RELEASE);
+
+        if(redraw_events != 0)
         {
             gui_render(&pio, &pio_ring, &gui);
         }
@@ -528,6 +547,8 @@ int main(
     gui_fini(opt_screen_shot_file, &gui);
 
     pio_fini(&pio);
+
+    touch_input_fini(&touch_input);
 
     if(opt_zlog_enabled != 0)
     {

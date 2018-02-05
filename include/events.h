@@ -24,7 +24,6 @@ typedef void (*events_broadcast_fx)(
 
 typedef struct
 {
-    int todo;
     volatile uint32_t events;
     events_broadcast_fx broadcast_fx;
 } events_context_s;
